@@ -8,7 +8,7 @@ import { userLogout } from '../controllers/user.js';
 import { resetpassword } from '../controllers/passswordreset.js';
 import { otpGenerate } from '../controllers/otp.js';
 import { varifyotp } from '../controllers/otp.js';
-// import {categories} from '../controllers/categories.js';
+
 import { getCategories } from '../controllers/categories.js';
 const router = express.Router();
 
