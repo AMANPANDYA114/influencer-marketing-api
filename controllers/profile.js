@@ -1,14 +1,20 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
-
 import UserProfile from '../models/profile .js';
 import cloudinary from '../utils/cloudinary.js';
 import upload from '../middlewares/multer.js';
 
-// // Upload user's profile picture
 export const uploadProfilePic = (req, res) => {
-  console.log('Request headers:', req.headers); // Log request headers for debugging
-  console.log('Request cookies:', req.cookies); 
+
+
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'Unauthorized: Missing or invalid token' });
+  }
+
+  const token = authHeader.split(' ')[1]; 
+
   upload.single('image')(req, res, async function (err) {
     if (err) {
       console.log(err);
@@ -24,10 +30,11 @@ export const uploadProfilePic = (req, res) => {
       const result = await cloudinary.uploader.upload(req.file.path);
       const imageUrl = result.secure_url;
 
-      // Update user's profile with the image URL
-      const decodedToken = jwt.verify(req.cookies.token, process.env.JWT_SECRET);
+     
+      const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
       const userId = decodedToken.userId;
 
+     
       const updatedProfile = await UserProfile.findOneAndUpdate(
         { userId: userId },
         { profilePicUrl: imageUrl },
@@ -38,7 +45,7 @@ export const uploadProfilePic = (req, res) => {
         console.log("Profile image URL not saved to database");
         return res.status(404).json({ success: false, message: 'Profile not found' });
       }
-      
+
       console.log("Profile image URL saved to database");
 
       res.status(200).json({ success: true, message: 'Profile picture uploaded successfully', user: updatedProfile });
@@ -49,14 +56,66 @@ export const uploadProfilePic = (req, res) => {
   });
 };
 
+export const uploadBackgroundImage = (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'Unauthorized: Missing or invalid token' });
+  }
+
+  const token = authHeader.split(' ')[1]; 
+
+  upload.single('image')(req, res, async function (err) {
+    if (err) {
+      console.log(err);
+      return res.status(500).json({ success: false, message: 'Error uploading file' });
+    }
+
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded' });
+      }
+
+      
+      const result = await cloudinary.uploader.upload(req.file.path);
+      const imageUrl = result.secure_url;
+
+    
+      const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+      const userId = decodedToken.userId;
+
+ 
+      const updatedProfile = await UserProfile.findOneAndUpdate(
+        { userId: userId },
+        { backgroundImage: imageUrl },
+        { new: true, upsert: true }
+      );
+
+      if (!updatedProfile) {
+        console.log("Background image URL not saved to database");
+        return res.status(404).json({ success: false, message: 'Profile not found' });
+      }
+
+      console.log("Background image URL saved to database");
+
+      res.status(200).json({ success: true, message: 'Background image uploaded successfully', user: updatedProfile });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: 'Error uploading background image' });
+    }
+  });
+};
 
 
 
-// // Update user's profile
 export const updateUserProfile = async (req, res) => {
   try {
-    const { fullName, username, profilePicUrl } = req.body;
-    const token = req.cookies.token; // Get the token from cookies
+    const { fullName, username, profilePicUrl, bio, role, backgroundImage } = req.body;
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Unauthorized: Missing or invalid token' });
+    }
+
+    const token = authHeader.split(' ')[1];
 
     if (!token) {
       return res.status(401).json({ success: false, message: 'Unauthorized: No token provided' });
@@ -64,26 +123,51 @@ export const updateUserProfile = async (req, res) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.userId;
-  
-    // Update the UserProfile model
+
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const updatedUserFields = {};
+    if (fullName) {
+      updatedUserFields.fullName = fullName;
+    } else {
+      updatedUserFields.fullName = currentUser.fullName || "Default Full Name";
+    }
+    if (username) {
+      updatedUserFields.username = username;
+    } else {
+      updatedUserFields.username = currentUser.username || "default_username";
+    }
+    if (profilePicUrl) {
+      updatedUserFields.profilePicUrl = profilePicUrl;
+    }
+
+    const updatedProfileFields = { ...updatedUserFields };
+    if (bio) {
+      updatedProfileFields.userBio = bio;
+    }
+    if (role) {
+      updatedProfileFields.userRole = role;
+    }
+   
+    if (backgroundImage) {
+      updatedProfileFields.backgroundImage = backgroundImage;
+    }
+
     const updatedProfile = await UserProfile.findOneAndUpdate(
       { userId },
-      { fullName, username, profilePicUrl },
+      updatedProfileFields,
       { new: true, upsert: true }
     );
 
-    if (!updatedProfile) {
-      return res.status(404).json({ success: false, message: 'Profile not found' });
-    }
-
-    // Update the User model
-    
-    const updatedUser = await User.findByIdAndUpdate(userId, { fullName, username, profilePicUrl }, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(userId, updatedUserFields, { new: true });
     if (!updatedUser) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    res.status(200).json({ success: true, message: 'Profile updated successfully', user: updatedProfile });
+    res.status(200).json({ success: true, message: 'Profile updated successfully', user: updatedUser });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Error updating profile' });
@@ -91,10 +175,16 @@ export const updateUserProfile = async (req, res) => {
 };
 
 
-// Get user's profile including profile picture URL
+
+
 export const getUserProfile = async (req, res) => {
   try {
-    const token = req.cookies.token; // Get the token from cookies
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Unauthorized: Missing or invalid token' });
+    }
+
+    const token = authHeader.split(' ')[1];
 
     if (!token) {
       return res.status(401).json({ success: false, message: 'Unauthorized: No token provided' });
@@ -104,21 +194,23 @@ export const getUserProfile = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.userId;
 
-    // Fetch user profile from the UserProfile model
-    const userProfile = await UserProfile.findOne({ userId });
+   
+    let userProfile = await UserProfile.findOne({ userId });
 
-    if (!userProfile) {
-      return res.status(404).json({ success: false, message: 'User profile not found' });
+    if (!userProfile || !userProfile.fullName || !userProfile.username) {
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+    
+      return res.status(200).json({ success: true, user: { fullName: user.fullName, username: user.username, profilePicUrl: userProfile ? userProfile.profilePicUrl : user.profilePicUrl, backgroundImage: userProfile ? userProfile.backgroundImage : null } });
     }
 
-    // Return user details including the profile picture URL
-    const { fullName, username, profilePicUrl } = userProfile;
-    res.status(200).json({ success: true, user: { fullName, username, profilePicUrl } });
+    
+    const { fullName, username, profilePicUrl, userBio, userRole, backgroundImage } = userProfile;
+    res.status(200).json({ success: true, user: { fullName, username, profilePicUrl, userBio, userRole, backgroundImage } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Error fetching profile' });
   }
 };
-
-
-

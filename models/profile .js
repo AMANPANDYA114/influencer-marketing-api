@@ -1,63 +1,41 @@
 
 
-module.exports = function (Schema) {
-  const Profile = new Schema({
-    _id: {
-      type: String,
-      default: uuidv4(),
-    },
-    userId: {
-      type: String,
-      required: true,
-    },
-    role: {
-      type: String,
-      enum: ['Explorer', 'Creator'],
-      required: true,
-    },
-    firstName: {
-      type: String,
-    },
-    lastName: {
-      type: String,
-    },
-    username: {
-      type: String,
-      unique: true,
-    },
-    interestedCategories: {
-      type: [String],
-    },
-    isPrivateProfile: {
-      type: Boolean,
-    },
-    isProfilePhotoUploaded: {
-      type: Boolean,
-    },
-    isBannerUploaded: {
-      type: Boolean,
-    },
-    socialLinks: {
-      linkedin: {
-        type: String,
-      },
-      instagram: {
-        type: String,
-      },
-      facebook: {
-        type: String,
-      },
-      twitter: {
-        type: String,
-      },
-      pinterest: {
-        type: String,
-      },
-      personal: {
-        type: String,
-      },
-    },
-  }, { timestamps: true });
+import mongoose from 'mongoose';
 
-  return Profile;
-};
+const userProfileSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true,
+  },
+  fullName: {
+    type: String,
+    required: true,
+  },
+  username: {
+    type: String,
+    required: true,
+  },
+  profilePicUrl: {
+    type: String,
+    default: null,
+  },
+  userBio: {
+    type: String,
+    required: true,
+  },
+  userRole: {
+    type: String,
+    enum: ['creator', 'explorer'],
+    required: true,
+  },
+  backgroundImage: {
+    type: String,
+    default: null,
+  },
+});
+
+const UserProfile = mongoose.model('UserProfile', userProfileSchema);
+
+export default UserProfile;

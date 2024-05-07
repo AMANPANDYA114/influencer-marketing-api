@@ -47,11 +47,11 @@ export const userRegister = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: '1h' // Token expires in 1 hour
+      expiresIn: '4h' // Token expires in 1 hour
     });
 console.log(token)
     // Set token as a cookie in the response
-    res.cookie('token', token, { httpOnly: true, maxAge: 10 * 60 * 1000 }).status(201).json({
+    res.cookie('token', token, { httpOnly: true, maxAge:  4 * 60 * 60 * 1000 }).status(201).json({
       success: true,
       message: 'User registered successfully',
       user: newUser
@@ -64,46 +64,43 @@ console.log(token)
 
 export const userLogin = async (req, res) => {
   try {
+ 
     const { email, password } = req.body;
 
- 
     if (!email || !password) {
       return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ success: false, message: 'User not found' });
+      return res.status(400).json({ success: false, message: 'Incorrect email or password' });
     }
 
- 
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: 'Incorrect password' });
+      return res.status(400).json({ success: false, message: 'Incorrect email or password' });
     }
 
-    // Generate JWT token
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '1h' 
+      expiresIn: '4h'
     });
 
-
-    res.cookie('token', token, { httpOnly: true, maxAge: 10 * 60 * 1000 }).json({
+    res.cookie('token', token, { httpOnly: true, maxAge:  4 * 60 * 60 * 1000 }).json({
       success: true,
       message: 'Login successful',
       user: {
         _id: user._id,
         name: user.name,
         email: user.email
-      }
+      },
+      "token":token
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Error logging in' });
   }
 };
+
 
 export const userLogout = async (req, res) => {
   try {
