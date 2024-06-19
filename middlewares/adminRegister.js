@@ -1,26 +1,22 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/user.js';
-
-const authMiddleware = async (req, res, next) => {
+import AdminRegister from '../models/adminregister.js';
+const adminMiddleware = async (req, res, next) => {
   try {
-    const token = req.headers.authorization.split(' ')[1]; 
+    const token = req.headers.authorization.split(' ')[1];
     if (!token) {
       return res.status(401).json({ success: false, message: 'Authorization token is required' });
     }
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId);
-    if (!user) {
+    const admin = await AdminRegister.findById(decoded.userId);
+    if (!admin) {
       return res.status(401).json({ success: false, message: 'Invalid token' });
     }
-
-    req.user = user; 
-    next(); 
+    req.admin = admin;
+    next();
   } catch (err) {
     console.error(err);
     return res.status(401).json({ success: false, message: 'Invalid token' });
   }
 };
 
-
-export default authMiddleware;
+export default adminMiddleware;

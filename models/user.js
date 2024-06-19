@@ -1,4 +1,5 @@
 
+
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
@@ -8,12 +9,13 @@ const userSchema = new mongoose.Schema({
   },
   username: {
     type: String,
-    required: true
+    required: true,
+    unique: true
   },
   email: {
     type: String,
-    unique: true,
-    required: true
+    required: true,
+    unique: true
   },
   age: {
     type: Number,
@@ -31,6 +33,25 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  role: {
+    type: String,
+    default: 'user',
+    enum: ['user', 'admin']
+  },
+  followers: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: []
+    }
+  ],
+  following: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: []
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now
@@ -40,3 +61,5 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 
 export default User;
+
+
