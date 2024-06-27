@@ -10,8 +10,8 @@ const transporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: 'amanpandya318@gmail.com',
-    pass: 'ovtf bzso sids yscm',
+    user: 'amanpandya161@gmail.com',
+    pass: 'gbqr hrsg rtha eosd',
   },
 });
 
@@ -46,7 +46,7 @@ export const otpGenerate = async (req, res) => {
 
  
     const mailOptions = {
-      from: 'amanpandya318@gmail.com',
+      from: '',
       to: email,
       subject: 'Verification Code',
       text: `Your OTP is: ${otpCode}`,
