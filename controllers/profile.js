@@ -26,7 +26,7 @@ export const uploadProfilePic = (req, res) => {
         return res.status(400).json({ success: false, message: 'No file uploaded' });
       }
 
-      // Upload the image to Cloudinary
+     
       const result = await cloudinary.uploader.upload(req.file.path);
       const imageUrl = result.secure_url;
 
