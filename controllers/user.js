@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
 import AdminRegister from '../models/adminregister.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
+import UserProfile from '../models/profile .js';
 
 
 
@@ -270,6 +271,26 @@ export const unfollowUser = async (req, res) => {
   }
 };
 
+// export const suggestedUsers = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+//     const user = await User.findById(userId).populate('following', 'username');
+//     if (!user) {
+//       return res.status(404).json({ success: false, error: 'User not found' });
+//     }
+
+//     const followingUserIds = user.following.map(followedUser => followedUser._id);
+
+//     const suggestedUsers = await User.find({ 
+//       _id: { $ne: userId, $nin: followingUserIds }
+//     }).select('username fullName');
+
+//     res.status(200).json({ success: true, suggestedUsers });
+//   } catch (err) {
+//     res.status(500).json({ success: false, error: err.message });
+//   }
+// };
+
 export const suggestedUsers = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -284,7 +305,17 @@ export const suggestedUsers = async (req, res) => {
       _id: { $ne: userId, $nin: followingUserIds }
     }).select('username fullName');
 
-    res.status(200).json({ success: true, suggestedUsers });
+    const suggestedUsersWithProfilePic = await Promise.all(suggestedUsers.map(async (suggestedUser) => {
+      const userProfile = await UserProfile.findOne({ userId: suggestedUser._id }).select('profilePicUrl');
+      return {
+        _id: suggestedUser._id,
+        username: suggestedUser.username,
+        fullName: suggestedUser.fullName,
+        profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+      };
+    }));
+
+    res.status(200).json({ success: true, suggestedUsers: suggestedUsersWithProfilePic });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
