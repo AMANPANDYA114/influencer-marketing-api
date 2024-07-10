@@ -188,7 +188,9 @@ export const userLogin = async (req, res) => {
         account: user.account,
         role: user.role // Including the role in the response
       },
-      token: token
+      token: token,
+       expireIn: '15 days'
+
     });
   } catch (err) {
     console.error(err);
