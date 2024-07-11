@@ -132,6 +132,11 @@ export const deletePost = async (req, res) => {
 //         res.status(500).json({ error: err.message });
 //     }
 // };
+
+// };
+
+
+
 export const likePost = async (req, res) => {
     try {
         const postId = req.params.id;
@@ -218,7 +223,8 @@ export const getUserPosts = async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-};
+
+}
 export const addComment = async (req, res) => {
     try {
         const postId = req.params.id;
@@ -248,7 +254,8 @@ export const addComment = async (req, res) => {
             username: user.username,
         };
 
-        post.comments.push(newComment);
+        // Add the new comment to the beginning of the comments array
+        post.comments.unshift(newComment);
         await post.save();
 
         res.status(201).json({ message: 'Comment added successfully', comment: newComment });
@@ -256,24 +263,6 @@ export const addComment = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
-// export const getComments = async (req, res) => {
-//     try {
-//         const postId = req.params.id;
-
-//         const post = await Post.findById(postId).populate('comments.userId', 'username');
-//         if (!post) {
-//             return res.status(404).json({ error: 'Post not found' });
-//         }
-
-//         res.status(200).json(post.comments);
-//     }  catch (err) {
-//         res.status(500).json({ error: err.message });
-//     }
-// };
-
-
-
 
 export const getComments = async (req, res) => {
     try {
@@ -287,9 +276,43 @@ export const getComments = async (req, res) => {
             return res.status(404).json({ error: 'Post not found' });
         }
 
+        // Sort comments by createdAt timestamp in descending order
+        post.comments.sort((a, b) => b.createdAt - a.createdAt);
+
         const commentsCount = post.comments.length;
 
         res.status(200).json({ comments: post.comments, commentsCount });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+
+export const deleteComment = async (req, res) => {
+    try {
+        const { postId, commentId } = req.params;
+
+       
+        const post = await Post.findById(postId);
+        if (!post) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+
+       
+        const comment = post.comments.find(comment => comment._id.toString() === commentId);
+        if (!comment) {
+            return res.status(404).json({ error: 'Comment not found' });
+        }
+
+       
+        if (comment.userId.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ error: 'Unauthorized: You are not allowed to delete this comment' });
+        }
+
+        post.comments = post.comments.filter(comment => comment._id.toString() !== commentId);
+        await post.save();
+
+        res.status(200).json({ message: 'Comment deleted successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
