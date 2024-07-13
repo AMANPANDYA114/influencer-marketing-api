@@ -26,9 +26,71 @@ export const getPost = async (req, res) => {
     }
 };
 
+// export const createPost = async (req, res) => {
+//     try {
+//         upload.array('postimage', 10)(req, res, async function (err) {
+//             if (err) {
+//                 console.log(err);
+//                 return res.status(500).json({ error: 'Error uploading files' });
+//             }
+//             const { text } = req.body;
+//             const userId = req.user._id;
+//             if (!text) {
+//                 return res.status(400).json({ error: 'Text field is required' });
+//             }
+//             const user = await User.findById(userId);
+//             if (!user) {
+//                 return res.status(404).json({ error: 'User not found' });
+//             }
+
+//             const maxLength = 500;
+//             if (text.length > maxLength) {
+//                 return res.status(400).json({ error: `Text must be less than ${maxLength} characters` });
+//             }
+
+//             let imageUrls = [];
+//             if (req.files && req.files.length > 0) {
+//                 imageUrls = await Promise.all(
+//                     req.files.map(async (file) => {
+//                         const uploadedResponse = await cloudinary.uploader.upload(file.path);
+//                         return uploadedResponse.secure_url;
+//                     })
+//                 );
+//             }
+
+//             const newPost = new Post({
+//                 postedBy: userId,
+//                 text,
+//                 img: imageUrls,
+//                 userFullName: user.fullName,
+//             });
+//             await newPost.save();
+
+//             const userProfile = await UserProfile.findOne({ userId });
+
+//             res.status(201).json({
+//                 _id: newPost._id,
+//                 text: newPost.text,
+//                 img: newPost.img,
+//                 createdAt: newPost.createdAt,
+//                 userFullName: user.fullName,
+//                 profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+//             });
+//         });
+//     } catch (err) {
+//         res.status(500).json({ error: err.message });
+//         console.log(err);
+//     }
+// };
+
+// upload post vidoe or with images 
+
+
+
+
 export const createPost = async (req, res) => {
     try {
-        upload.array('postimage', 10)(req, res, async function (err) {
+        upload.array('postmedia', 10)(req, res, async function (err) {
             if (err) {
                 console.log(err);
                 return res.status(500).json({ error: 'Error uploading files' });
@@ -48,12 +110,23 @@ export const createPost = async (req, res) => {
                 return res.status(400).json({ error: `Text must be less than ${maxLength} characters` });
             }
 
-            let imageUrls = [];
+            let mediaFiles = [];
             if (req.files && req.files.length > 0) {
-                imageUrls = await Promise.all(
+                mediaFiles = await Promise.all(
                     req.files.map(async (file) => {
-                        const uploadedResponse = await cloudinary.uploader.upload(file.path);
-                        return uploadedResponse.secure_url;
+                        if (file.mimetype.startsWith('image')) {
+                            const uploadedResponse = await cloudinary.uploader.upload(file.path);
+                            return { type: 'image', url: uploadedResponse.secure_url };
+                        } else if (file.mimetype.startsWith('video')) {
+                            const uploadedResponse = await cloudinary.uploader.upload(file.path, {
+                                resource_type: "video",
+                                eager: [
+                                    { streaming_profile: "hd", format: "m3u8" }
+                                ]
+                            });
+                            return { type: 'video', url: uploadedResponse.secure_url };
+                        }
+                        // Handle other file types if needed
                     })
                 );
             }
@@ -61,7 +134,7 @@ export const createPost = async (req, res) => {
             const newPost = new Post({
                 postedBy: userId,
                 text,
-                img: imageUrls,
+                media: mediaFiles,
                 userFullName: user.fullName,
             });
             await newPost.save();
@@ -71,7 +144,7 @@ export const createPost = async (req, res) => {
             res.status(201).json({
                 _id: newPost._id,
                 text: newPost.text,
-                img: newPost.img,
+                media: newPost.media,
                 createdAt: newPost.createdAt,
                 userFullName: user.fullName,
                 profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
@@ -82,6 +155,7 @@ export const createPost = async (req, res) => {
         console.log(err);
     }
 };
+
 export const deletePost = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
@@ -313,6 +387,71 @@ export const deleteComment = async (req, res) => {
         await post.save();
 
         res.status(200).json({ message: 'Comment deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+
+export const getUserDetails = async (req, res) => {
+    try {
+        const userId = req.params.id;
+
+        
+        const user = await User.findById(userId).select('-password -confirmPassword');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+      
+        const userProfile = await UserProfile.findOne({ userId });
+
+    
+        const followersDetails = await Promise.all(user.followers.map(async (followerId) => {
+            const follower = await User.findById(followerId).select('fullName');
+            const followerProfile = await UserProfile.findOne({ userId: followerId }).select('profilePicUrl');
+            return {
+                _id: followerId,
+                fullName: follower.fullName,
+                profilePicUrl: followerProfile ? followerProfile.profilePicUrl : null,
+            };
+        }));
+
+        
+        const followingDetails = await Promise.all(user.following.map(async (followingId) => {
+            const following = await User.findById(followingId).select('fullName');
+            const followingProfile = await UserProfile.findOne({ userId: followingId }).select('profilePicUrl');
+            return {
+                _id: followingId,
+                fullName: following.fullName,
+                profilePicUrl: followingProfile ? followingProfile.profilePicUrl : null,
+            };
+        }));
+
+ 
+        const postCount = await Post.countDocuments({ postedBy: userId });
+
+  
+        const userDetails = {
+            _id: user._id,
+            fullName: user.fullName,
+            username: user.username,
+            email: user.email,
+            age: user.age,
+            account: user.account,
+            createdAt: user.createdAt,
+            followers: followersDetails,
+            following: followingDetails,
+            followersCount: user.followers.length,
+            followingCount: user.following.length,
+            postCount: postCount,
+            role: user.role,
+            profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+            userBio: userProfile ? userProfile.userBio : null,
+            backgroundImage: userProfile ? userProfile.backgroundImage : null,
+        };
+
+        res.status(200).json(userDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

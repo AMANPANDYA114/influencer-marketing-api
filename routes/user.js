@@ -11,7 +11,7 @@ import { uploadProfilePic, getUserProfile, updateUserProfile, uploadBackgroundIm
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 import { getCategory, createCategory, updateCategory, deleteCategory } from '../controllers/category.js';
-import { getEvents,createEvent } from '../controllers/events.js';
+import { getEvents,createEvent ,getEventsSubcategory} from '../controllers/events.js';
 
 const router = express.Router();
 
@@ -37,6 +37,9 @@ router.post('/unfollow/:userId', authMiddleware, unfollowUser);
 router.get('/suggested-users', authMiddleware, suggestedUsers);
 
 router.get('/getevents', getEvents);
+router.get('/getsub-events', getEventsSubcategory);
+
 router.post('/create-events', authMiddleware, createEvent);
+
 
 export default router;

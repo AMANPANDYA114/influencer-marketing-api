@@ -1,5 +1,5 @@
 import express from 'express';
-import { getPost, createPost, deletePost, getFeedPosts, getUserPosts,likePost ,addComment,getComments ,deleteComment} from '../controllers/post.js';
+import { getPost, createPost, deletePost, getFeedPosts, getUserPosts,likePost ,addComment,getComments ,deleteComment ,getUserDetails} from '../controllers/post.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -12,5 +12,6 @@ router.post('/like/:id',authMiddleware, likePost);
 router.post('/post/:id/comment',authMiddleware, addComment);
 router.get('/post/:id/comments',authMiddleware, getComments);
 router.delete('/post/:postId/comments/:commentId', authMiddleware, deleteComment);
+router.get('/getuserdetails/:id', getUserDetails);
 
 export default router;

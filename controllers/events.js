@@ -76,3 +76,49 @@ export const getEvents = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error fetching events' });
   }
 };
+
+
+
+
+
+// export const getEventsSubcategory = async (req, res) => {
+//   const { subcategory } = req.query;
+
+//   try {
+//     let query = {};
+//     if (subcategory) {
+//       query.eventSubcategory = subcategory;
+//     }
+
+//     const events = await Event.find(query).populate({
+//       path: 'creatorId',
+//       select: 'fullName profilePicUrl',
+//     }).select('creatorId eventType eventCategory eventSubcategory venueName venueAddress date time images description fees interests');
+
+//     res.status(200).json({ success: true, events });
+//   } catch (err) {
+//     console.error('Error fetching events:', err);
+//     res.status(500).json({ success: false, message: 'Error fetching events' });
+//   }
+// };
+
+
+
+
+export const getEventsSubcategory = async (req, res) => {
+  const { subcategory } = req.query;
+
+  try {
+    let query = {};
+    if (subcategory) {
+      query.eventSubcategory = subcategory;
+    }
+
+    const events = await Event.find(query).select('eventName images');
+
+    res.status(200).json({ success: true, events });
+  } catch (err) {
+    console.error('Error fetching events:', err);
+    res.status(500).json({ success: false, message: 'Error fetching events' });
+  }
+};

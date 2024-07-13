@@ -275,25 +275,6 @@ export const unfollowUser = async (req, res) => {
   }
 };
 
-// export const suggestedUsers = async (req, res) => {
-//   try {
-//     const userId = req.user._id;
-//     const user = await User.findById(userId).populate('following', 'username');
-//     if (!user) {
-//       return res.status(404).json({ success: false, error: 'User not found' });
-//     }
-
-//     const followingUserIds = user.following.map(followedUser => followedUser._id);
-
-//     const suggestedUsers = await User.find({ 
-//       _id: { $ne: userId, $nin: followingUserIds }
-//     }).select('username fullName');
-
-//     res.status(200).json({ success: true, suggestedUsers });
-//   } catch (err) {
-//     res.status(500).json({ success: false, error: err.message });
-//   }
-// };
 
 export const suggestedUsers = async (req, res) => {
   try {
