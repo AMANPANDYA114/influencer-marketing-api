@@ -9,16 +9,13 @@ dotenv.config();
 const app = express();
 const port = 8080;
 
-// Middleware to parse JSON bodies
+
 app.use(express.json());
 
-// Use CORS middleware with modified options
-app.use(cors({
 
 
-}));
 
-// Route for user-related operations
+
 app.use(cookieParser());
 app.use('/api/user', userRoutes);
 
