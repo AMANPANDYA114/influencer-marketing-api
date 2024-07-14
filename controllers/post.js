@@ -26,62 +26,6 @@ export const getPost = async (req, res) => {
     }
 };
 
-// export const createPost = async (req, res) => {
-//     try {
-//         upload.array('postimage', 10)(req, res, async function (err) {
-//             if (err) {
-//                 console.log(err);
-//                 return res.status(500).json({ error: 'Error uploading files' });
-//             }
-//             const { text } = req.body;
-//             const userId = req.user._id;
-//             if (!text) {
-//                 return res.status(400).json({ error: 'Text field is required' });
-//             }
-//             const user = await User.findById(userId);
-//             if (!user) {
-//                 return res.status(404).json({ error: 'User not found' });
-//             }
-
-//             const maxLength = 500;
-//             if (text.length > maxLength) {
-//                 return res.status(400).json({ error: `Text must be less than ${maxLength} characters` });
-//             }
-
-//             let imageUrls = [];
-//             if (req.files && req.files.length > 0) {
-//                 imageUrls = await Promise.all(
-//                     req.files.map(async (file) => {
-//                         const uploadedResponse = await cloudinary.uploader.upload(file.path);
-//                         return uploadedResponse.secure_url;
-//                     })
-//                 );
-//             }
-
-//             const newPost = new Post({
-//                 postedBy: userId,
-//                 text,
-//                 img: imageUrls,
-//                 userFullName: user.fullName,
-//             });
-//             await newPost.save();
-
-//             const userProfile = await UserProfile.findOne({ userId });
-
-//             res.status(201).json({
-//                 _id: newPost._id,
-//                 text: newPost.text,
-//                 img: newPost.img,
-//                 createdAt: newPost.createdAt,
-//                 userFullName: user.fullName,
-//                 profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
-//             });
-//         });
-//     } catch (err) {
-//         res.status(500).json({ error: err.message });
-//         console.log(err);
-//     }
-// };
 
 // upload post vidoe or with images 
 
@@ -251,40 +195,6 @@ export const getFeedPosts = async (req, res) => {
     }
 };
 
-// export const getFeedPosts = async (req, res) => {
-//     try {
-//         const userId = req.user._id;
-
-//         const user = await User.findById(userId);
-//         if (!user) {
-//             return res.status(404).json({ error: "User Not Found" });
-//         }
-
-//         // Include the logged-in user's ID in the list of IDs to fetch posts for
-//         const following = [...user.following, userId];
-
-//         if (following.length === 0) {
-//             return res.status(200).json({ message: "No users followed", posts: [] });
-//         }
-
-//         const feedPosts = await Post.find({ postedBy: { $in: following } })
-//             .sort({ createdAt: -1 })
-//             .populate('postedBy', 'fullName username');
-
-//         const postsWithProfilePics = await Promise.all(feedPosts.map(async (post) => {
-//             const userProfile = await UserProfile.findOne({ userId: post.postedBy._id });
-//             return {
-//                 ...post._doc,
-//                 profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
-//                 likeCount: post.likes.length 
-//             };
-//         }));
-
-//         res.status(200).json(postsWithProfilePics);
-//     } catch (err) {
-//         res.status(500).json({ error: err.message });
-//     }
-// };
 
 export const getUserPosts = async (req, res) => {
     const { username } = req.params;
@@ -403,7 +313,6 @@ export const deleteComment = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
 export const deletePost = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
@@ -415,11 +324,21 @@ export const deletePost = async (req, res) => {
         if (post.postedBy.toString() !== req.user._id.toString()) {
             return res.status(401).json({ error: "Unauthorized to delete this post" });
         }
-        if (post.img && typeof post.img === 'string') {
-            const imgId = post.img.split("/").pop().split(".")[0];
-            await cloudinary.uploader.destroy(imgId);
+
+        // Check if post has media (images or videos)
+        if (post.media && post.media.length > 0) {
+            await Promise.all(post.media.map(async (mediaItem) => {
+                if (mediaItem.type === 'video') {
+                    // Handle video deletion from Cloudinary
+                    const videoId = mediaItem.url.split("/").pop().split(".")[0];
+                    await cloudinary.uploader.destroy(videoId);
+                } else if (mediaItem.type === 'image') {
+                    // Handle image deletion from Cloudinary if needed
+                    const imageId = mediaItem.url.split("/").pop().split(".")[0];
+                    await cloudinary.uploader.destroy(imageId);
+                }
+            }));
         }
-    
 
         await Post.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: "Post deleted successfully" });
