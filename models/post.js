@@ -1,3 +1,6 @@
+
+
+
 // import mongoose from 'mongoose';
 
 // const postSchema = new mongoose.Schema({
@@ -19,7 +22,7 @@
 //         type: Date,
 //         default: Date.now
 //     },
-//     replies: [{
+//     comments: [{
 //         userId: {
 //             type: mongoose.Schema.Types.ObjectId,
 //             ref: 'User',
@@ -52,6 +55,14 @@
 // export default Post;
 
 
+
+
+
+
+
+
+
+
 import mongoose from 'mongoose';
 
 const postSchema = new mongoose.Schema({
@@ -64,7 +75,10 @@ const postSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    img: [String],
+    media: [{
+        type: { type: String, enum: ['image', 'video'] },
+        url: { type: String }
+    }],
     userFullName: {
         type: String,
         required: true

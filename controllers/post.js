@@ -87,7 +87,6 @@ export const getPost = async (req, res) => {
 
 
 
-
 export const createPost = async (req, res) => {
     try {
         upload.array('postmedia', 10)(req, res, async function (err) {
@@ -95,11 +94,14 @@ export const createPost = async (req, res) => {
                 console.log(err);
                 return res.status(500).json({ error: 'Error uploading files' });
             }
+
             const { text } = req.body;
             const userId = req.user._id;
+
             if (!text) {
                 return res.status(400).json({ error: 'Text field is required' });
             }
+
             const user = await User.findById(userId);
             if (!user) {
                 return res.status(404).json({ error: 'User not found' });
@@ -126,7 +128,6 @@ export const createPost = async (req, res) => {
                             });
                             return { type: 'video', url: uploadedResponse.secure_url };
                         }
-                        // Handle other file types if needed
                     })
                 );
             }
@@ -137,6 +138,7 @@ export const createPost = async (req, res) => {
                 media: mediaFiles,
                 userFullName: user.fullName,
             });
+
             await newPost.save();
 
             const userProfile = await UserProfile.findOne({ userId });
@@ -155,34 +157,6 @@ export const createPost = async (req, res) => {
         console.log(err);
     }
 };
-
-export const deletePost = async (req, res) => {
-    try {
-        const post = await Post.findById(req.params.id);
-
-        if (!post) {
-            return res.status(404).json({ error: "Post not found" });
-        }
-
-        if (post.postedBy.toString() !== req.user._id.toString()) {
-            return res.status(401).json({ error: "Unauthorized to delete this post" });
-        }
-        if (post.img && typeof post.img === 'string') {
-            const imgId = post.img.split("/").pop().split(".")[0];
-            await cloudinary.uploader.destroy(imgId);
-        }
-    
-
-        await Post.findByIdAndDelete(req.params.id);
-        res.status(200).json({ message: "Post deleted successfully" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
-
-
-
-
 // export const deletePost = async (req, res) => {
 //     try {
 //         const post = await Post.findById(req.params.id);
@@ -239,16 +213,19 @@ export const likePost = async (req, res) => {
     }
 };
 
+
+
+
+// Get feed posts for the logged-in user
 export const getFeedPosts = async (req, res) => {
     try {
         const userId = req.user._id;
 
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ error: "User Not Found" });
+            return res.status(404).json({ error: "User not found" });
         }
 
-        // Include the logged-in user's ID in the list of IDs to fetch posts for
         const following = [...user.following, userId];
 
         if (following.length === 0) {
@@ -264,7 +241,7 @@ export const getFeedPosts = async (req, res) => {
             return {
                 ...post._doc,
                 profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
-                likeCount: post.likes.length 
+                likeCount: post.likes.length
             };
         }));
 
@@ -273,6 +250,41 @@ export const getFeedPosts = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// export const getFeedPosts = async (req, res) => {
+//     try {
+//         const userId = req.user._id;
+
+//         const user = await User.findById(userId);
+//         if (!user) {
+//             return res.status(404).json({ error: "User Not Found" });
+//         }
+
+//         // Include the logged-in user's ID in the list of IDs to fetch posts for
+//         const following = [...user.following, userId];
+
+//         if (following.length === 0) {
+//             return res.status(200).json({ message: "No users followed", posts: [] });
+//         }
+
+//         const feedPosts = await Post.find({ postedBy: { $in: following } })
+//             .sort({ createdAt: -1 })
+//             .populate('postedBy', 'fullName username');
+
+//         const postsWithProfilePics = await Promise.all(feedPosts.map(async (post) => {
+//             const userProfile = await UserProfile.findOne({ userId: post.postedBy._id });
+//             return {
+//                 ...post._doc,
+//                 profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+//                 likeCount: post.likes.length 
+//             };
+//         }));
+
+//         res.status(200).json(postsWithProfilePics);
+//     } catch (err) {
+//         res.status(500).json({ error: err.message });
+//     }
+// };
 
 export const getUserPosts = async (req, res) => {
     const { username } = req.params;
@@ -392,6 +404,29 @@ export const deleteComment = async (req, res) => {
     }
 };
 
+export const deletePost = async (req, res) => {
+    try {
+        const post = await Post.findById(req.params.id);
+
+        if (!post) {
+            return res.status(404).json({ error: "Post not found" });
+        }
+
+        if (post.postedBy.toString() !== req.user._id.toString()) {
+            return res.status(401).json({ error: "Unauthorized to delete this post" });
+        }
+        if (post.img && typeof post.img === 'string') {
+            const imgId = post.img.split("/").pop().split(".")[0];
+            await cloudinary.uploader.destroy(imgId);
+        }
+    
+
+        await Post.findByIdAndDelete(req.params.id);
+        res.status(200).json({ message: "Post deleted successfully" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
 export const getUserDetails = async (req, res) => {
     try {
@@ -408,22 +443,25 @@ export const getUserDetails = async (req, res) => {
 
     
         const followersDetails = await Promise.all(user.followers.map(async (followerId) => {
-            const follower = await User.findById(followerId).select('fullName');
+            const follower = await User.findById(followerId).select('fullName username');
             const followerProfile = await UserProfile.findOne({ userId: followerId }).select('profilePicUrl');
             return {
                 _id: followerId,
+                username: follower.username,
                 fullName: follower.fullName,
                 profilePicUrl: followerProfile ? followerProfile.profilePicUrl : null,
+              
             };
         }));
 
         
         const followingDetails = await Promise.all(user.following.map(async (followingId) => {
-            const following = await User.findById(followingId).select('fullName');
+            const following = await User.findById(followingId).select('fullName  username');
             const followingProfile = await UserProfile.findOne({ userId: followingId }).select('profilePicUrl');
             return {
                 _id: followingId,
                 fullName: following.fullName,
+                username: following.username,
                 profilePicUrl: followingProfile ? followingProfile.profilePicUrl : null,
             };
         }));
