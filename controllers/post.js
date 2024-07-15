@@ -29,12 +29,14 @@ export const getPost = async (req, res) => {
 
 // upload post vidoe or with images 
 
+
+
 export const createPost = async (req, res) => {
     try {
-        upload.array('postmedia', 10)(req, res, async function (err) {
+        upload.single('postmedia')(req, res, async function (err) {
             if (err) {
-                console.log('Error uploading files:', err);
-                return res.status(500).json({ error: 'Error uploading files' });
+                console.log('Error uploading file:', err);
+                return res.status(500).json({ error: 'Error uploading file' });
             }
 
             const { text } = req.body;
@@ -54,27 +56,23 @@ export const createPost = async (req, res) => {
                 return res.status(400).json({ error: `Text must be less than ${maxLength} characters` });
             }
 
-            let mediaFiles = [];
-            if (req.files && req.files.length > 0) {
+            let mediaFile = null;
+            if (req.file) {
                 try {
-                    mediaFiles = await Promise.all(
-                        req.files.map(async (file) => {
-                            if (file.mimetype.startsWith('image')) {
-                                const uploadedResponse = await cloudinary.uploader.upload(file.path);
-                                console.log('Image uploaded successfully:', uploadedResponse.secure_url);
-                                return { type: 'image', url: uploadedResponse.secure_url };
-                            } else if (file.mimetype.startsWith('video')) {
-                                const uploadedResponse = await cloudinary.uploader.upload(file.path, {
-                                    resource_type: "video",
-                                    eager: [
-                                        { streaming_profile: "hd", format: "m3u8" }
-                                    ]
-                                });
-                                console.log('Video uploaded successfully:', uploadedResponse.secure_url);
-                                return { type: 'video', url: uploadedResponse.secure_url };
-                            }
-                        })
-                    );
+                    if (req.file.mimetype.startsWith('image')) {
+                        const uploadedResponse = await cloudinary.uploader.upload(req.file.path);
+                        console.log('Image uploaded successfully:', uploadedResponse.secure_url);
+                        mediaFile = { type: 'image', url: uploadedResponse.secure_url };
+                    } else if (req.file.mimetype.startsWith('video')) {
+                        const uploadedResponse = await cloudinary.uploader.upload(req.file.path, {
+                            resource_type: "video",
+                            eager: [
+                                { streaming_profile: "hd", format: "m3u8" }
+                            ]
+                        });
+                        console.log('Video uploaded successfully:', uploadedResponse.secure_url);
+                        mediaFile = { type: 'video', url: uploadedResponse.secure_url };
+                    }
                 } catch (uploadError) {
                     console.log('Error during file upload:', uploadError);
                     return res.status(500).json({ error: 'Error during file upload' });
@@ -84,7 +82,7 @@ export const createPost = async (req, res) => {
             const newPost = new Post({
                 postedBy: userId,
                 text,
-                media: mediaFiles,
+                media: mediaFile ? [mediaFile] : [],
                 userFullName: user.fullName,
             });
 
@@ -112,7 +110,6 @@ export const createPost = async (req, res) => {
         console.log('Unexpected error:', err);
     }
 };
-
 
 
 export const likePost = async (req, res) => {

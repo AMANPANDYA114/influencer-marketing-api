@@ -11,10 +11,6 @@ const port = 8080;
 
 app.use(express.json());
 
-
-
-
-
 app.use(cookieParser());
 app.use('/api/user', userRoutes);
 
