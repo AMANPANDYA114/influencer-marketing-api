@@ -4,9 +4,9 @@ import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 router.get('/post/:id', authMiddleware, getPost); 
-// router.post('/create/post', authMiddleware, createPost); 
 
-router.put('/create/post', authMiddleware, createPost)
+
+router.put('/create-post',createPost)
 
 router.delete('/post/:id', authMiddleware, deletePost);
 router.get('/feed', authMiddleware, getFeedPosts); 
