@@ -29,13 +29,11 @@ export const getPost = async (req, res) => {
 
 // upload post vidoe or with images 
 
-
-
 export const createPost = async (req, res) => {
     try {
         upload.array('postmedia', 10)(req, res, async function (err) {
             if (err) {
-                console.log(err);
+                console.log('Error uploading files:', err);
                 return res.status(500).json({ error: 'Error uploading files' });
             }
 
@@ -58,22 +56,29 @@ export const createPost = async (req, res) => {
 
             let mediaFiles = [];
             if (req.files && req.files.length > 0) {
-                mediaFiles = await Promise.all(
-                    req.files.map(async (file) => {
-                        if (file.mimetype.startsWith('image')) {
-                            const uploadedResponse = await cloudinary.uploader.upload(file.path);
-                            return { type: 'image', url: uploadedResponse.secure_url };
-                        } else if (file.mimetype.startsWith('video')) {
-                            const uploadedResponse = await cloudinary.uploader.upload(file.path, {
-                                resource_type: "video",
-                                eager: [
-                                    { streaming_profile: "hd", format: "m3u8" }
-                                ]
-                            });
-                            return { type: 'video', url: uploadedResponse.secure_url };
-                        }
-                    })
-                );
+                try {
+                    mediaFiles = await Promise.all(
+                        req.files.map(async (file) => {
+                            if (file.mimetype.startsWith('image')) {
+                                const uploadedResponse = await cloudinary.uploader.upload(file.path);
+                                console.log('Image uploaded successfully:', uploadedResponse.secure_url);
+                                return { type: 'image', url: uploadedResponse.secure_url };
+                            } else if (file.mimetype.startsWith('video')) {
+                                const uploadedResponse = await cloudinary.uploader.upload(file.path, {
+                                    resource_type: "video",
+                                    eager: [
+                                        { streaming_profile: "hd", format: "m3u8" }
+                                    ]
+                                });
+                                console.log('Video uploaded successfully:', uploadedResponse.secure_url);
+                                return { type: 'video', url: uploadedResponse.secure_url };
+                            }
+                        })
+                    );
+                } catch (uploadError) {
+                    console.log('Error during file upload:', uploadError);
+                    return res.status(500).json({ error: 'Error during file upload' });
+                }
             }
 
             const newPost = new Post({
@@ -83,24 +88,31 @@ export const createPost = async (req, res) => {
                 userFullName: user.fullName,
             });
 
-            await newPost.save();
+            try {
+                await newPost.save();
+                console.log('Post saved successfully:', newPost._id);
 
-            const userProfile = await UserProfile.findOne({ userId });
+                const userProfile = await UserProfile.findOne({ userId });
 
-            res.status(201).json({
-                _id: newPost._id,
-                text: newPost.text,
-                media: newPost.media,
-                createdAt: newPost.createdAt,
-                userFullName: user.fullName,
-                profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
-            });
+                res.status(201).json({
+                    _id: newPost._id,
+                    text: newPost.text,
+                    media: newPost.media,
+                    createdAt: newPost.createdAt,
+                    userFullName: user.fullName,
+                    profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+                });
+            } catch (saveError) {
+                console.log('Error saving post:', saveError);
+                res.status(500).json({ error: 'Error saving post' });
+            }
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
-        console.log(err);
+        console.log('Unexpected error:', err);
     }
 };
+
 // export const deletePost = async (req, res) => {
 //     try {
 //         const post = await Post.findById(req.params.id);
