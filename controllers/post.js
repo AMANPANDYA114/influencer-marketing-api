@@ -113,32 +113,6 @@ export const createPost = async (req, res) => {
     }
 };
 
-// export const deletePost = async (req, res) => {
-//     try {
-//         const post = await Post.findById(req.params.id);
-
-//         if (!post) {
-//             return res.status(404).json({ error: "Post not found" });
-//         }
-
-//         if (post.postedBy.toString() !== req.user._id.toString()) {
-//             return res.status(401).json({ error: "Unauthorized to delete this post" });
-//         }
-
-//         if (post.img) {
-//             const imgId = post.img.split("/").pop().split(".")[0];
-//             await cloudinary.uploader.destroy(imgId);
-//         }
-
-//         await Post.findByIdAndDelete(req.params.id);
-//         res.status(200).json({ message: "Post deleted Successfully" });
-//     } catch (err) {
-//         res.status(500).json({ error: err.message });
-//     }
-// };
-
-// };
-
 
 
 export const likePost = async (req, res) => {
