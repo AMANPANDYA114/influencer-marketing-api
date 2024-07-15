@@ -31,9 +31,11 @@ export const getPost = async (req, res) => {
 
 
 
-export const createPost = async (req, res) => {
+
+
+export const uploadMediaPost = async (req, res) => {
     try {
-        upload.single('postmedia')(req, res, async function (err) {
+        upload.single('media')(req, res, async function (err) {
             if (err) {
                 console.log('Error uploading file:', err);
                 return res.status(500).json({ error: 'Error uploading file' });
@@ -79,7 +81,7 @@ export const createPost = async (req, res) => {
                 }
             }
 
-            const newPost = new Post({
+            const newMediaPost = new Post({
                 postedBy: userId,
                 text,
                 media: mediaFile ? [mediaFile] : [],
@@ -87,16 +89,16 @@ export const createPost = async (req, res) => {
             });
 
             try {
-                await newPost.save();
-                console.log('Post saved successfully:', newPost._id);
+                await newMediaPost.save();
+                console.log('Post saved successfully:', newMediaPost._id);
 
                 const userProfile = await UserProfile.findOne({ userId });
 
                 res.status(201).json({
-                    _id: newPost._id,
-                    text: newPost.text,
-                    media: newPost.media,
-                    createdAt: newPost.createdAt,
+                    _id: newMediaPost._id,
+                    text: newMediaPost.text,
+                    media: newMediaPost.media,
+                    createdAt: newMediaPost.createdAt,
                     userFullName: user.fullName,
                     profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
                 });
@@ -110,6 +112,87 @@ export const createPost = async (req, res) => {
         console.log('Unexpected error:', err);
     }
 };
+
+
+// export const createPost = async (req, res) => {
+//     try {
+//         upload.single('postmedia')(req, res, async function (err) {
+//             if (err) {
+//                 console.log('Error uploading file:', err);
+//                 return res.status(500).json({ error: 'Error uploading file' });
+//             }
+
+//             const { text } = req.body;
+//             const userId = req.user._id;
+
+//             if (!text) {
+//                 return res.status(400).json({ error: 'Text field is required' });
+//             }
+
+//             const user = await User.findById(userId);
+//             if (!user) {
+//                 return res.status(404).json({ error: 'User not found' });
+//             }
+
+//             const maxLength = 500;
+//             if (text.length > maxLength) {
+//                 return res.status(400).json({ error: `Text must be less than ${maxLength} characters` });
+//             }
+
+//             let mediaFile = null;
+//             if (req.file) {
+//                 try {
+//                     if (req.file.mimetype.startsWith('image')) {
+//                         const uploadedResponse = await cloudinary.uploader.upload(req.file.path);
+//                         console.log('Image uploaded successfully:', uploadedResponse.secure_url);
+//                         mediaFile = { type: 'image', url: uploadedResponse.secure_url };
+//                     } else if (req.file.mimetype.startsWith('video')) {
+//                         const uploadedResponse = await cloudinary.uploader.upload(req.file.path, {
+//                             resource_type: "video",
+//                             eager: [
+//                                 { streaming_profile: "hd", format: "m3u8" }
+//                             ]
+//                         });
+//                         console.log('Video uploaded successfully:', uploadedResponse.secure_url);
+//                         mediaFile = { type: 'video', url: uploadedResponse.secure_url };
+//                     }
+//                 } catch (uploadError) {
+//                     console.log('Error during file upload:', uploadError);
+//                     return res.status(500).json({ error: 'Error during file upload' });
+//                 }
+//             }
+
+//             const newPost = new Post({
+//                 postedBy: userId,
+//                 text,
+//                 media: mediaFile ? [mediaFile] : [],
+//                 userFullName: user.fullName,
+//             });
+
+//             try {
+//                 await newPost.save();
+//                 console.log('Post saved successfully:', newPost._id);
+
+//                 const userProfile = await UserProfile.findOne({ userId });
+
+//                 res.status(201).json({
+//                     _id: newPost._id,
+//                     text: newPost.text,
+//                     media: newPost.media,
+//                     createdAt: newPost.createdAt,
+//                     userFullName: user.fullName,
+//                     profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+//                 });
+//             } catch (saveError) {
+//                 console.log('Error saving post:', saveError);
+//                 res.status(500).json({ error: 'Error saving post' });
+//             }
+//         });
+//     } catch (err) {
+//         res.status(500).json({ error: err.message });
+//         console.log('Unexpected error:', err);
+//     }
+// };
 
 
 export const likePost = async (req, res) => {
