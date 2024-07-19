@@ -5,6 +5,10 @@ import UserProfile from '../models/profile .js';
 import cloudinary from '../utils/cloudinary.js';
 import upload from '../middlewares/multer.js';
 
+import Video from '../models/Video.js';
+// upload post vidoe or with images 
+
+
 export const getPost = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id)
@@ -27,15 +31,203 @@ export const getPost = async (req, res) => {
 };
 
 
-// upload post vidoe or with images 
-
-
-
-
-
-export const uploadMediaPost = async (req, res) => {
+export const createVideoPost = async (req, res) => {
     try {
-        upload.single('media')(req, res, async function (err) {
+        // Handle file upload using multer
+        upload.array('postmedia', 10)(req, res, async function (err) {
+            if (err) {
+                console.log('Error uploading files:', err);
+                return res.status(500).json({ error: 'Error uploading files' });
+            }
+
+            const { text } = req.body;
+            const userId = req.user._id;
+
+            // Validate text input
+            if (!text) {
+                return res.status(400).json({ error: 'Text field is required' });
+            }
+
+            // Find user by ID
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+
+            // Validate text length
+            const maxLength = 500;
+            if (text.length > maxLength) {
+                return res.status(400).json({ error: `Text must be less than ${maxLength} characters` });
+            }
+
+            // Array to store uploaded video URLs
+            let mediaFiles = [];
+
+            // Process each uploaded file
+            if (req.files) {
+                try {
+                    for (const file of req.files) {
+                        // Check if the file is a video
+                        if (file.mimetype.startsWith('video')) {
+                            // Upload video file to Cloudinary
+                            const uploadedResponse = await cloudinary.uploader.upload(file.path, { resource_type: 'video' });
+                            console.log('Video uploaded successfully:', uploadedResponse.secure_url);
+
+                            // Store the uploaded video URL in mediaFiles array
+                            mediaFiles.push({ type: 'video', url: uploadedResponse.secure_url });
+                        } else if (file.mimetype.startsWith('image')) {
+                            // Upload image file to Cloudinary
+                            const uploadedResponse = await cloudinary.uploader.upload(file.path);
+                            console.log('Image uploaded successfully:', uploadedResponse.secure_url);
+
+                            // Store the uploaded image URL in mediaFiles array
+                            mediaFiles.push({ type: 'image', url: uploadedResponse.secure_url });
+                        } else {
+                            // If the file type is not supported, return an error
+                            return res.status(400).json({ error: 'Only image and video files are allowed' });
+                        }
+                    }
+                } catch (uploadError) {
+                    // Handle upload errors
+                    console.log('Error during file upload:', uploadError);
+                    return res.status(500).json({ error: 'Error during file upload' });
+                }
+            }
+
+            // Create a new Post document
+            const newPost = new Post({
+                postedBy: userId,
+                text,
+                media: mediaFiles, // Store uploaded media URLs
+                userFullName: user.fullName,
+            });
+
+            try {
+                // Save the new post to the database
+                await newPost.save();
+                console.log('Post saved successfully to database:', newPost._id);
+
+                // Optionally fetch user profile information
+                const userProfile = await UserProfile.findOne({ userId });
+
+                // Return a success response with the details of the saved post
+                res.status(201).json({
+                    _id: newPost._id,
+                    text: newPost.text,
+                    media: newPost.media,
+                    createdAt: newPost.createdAt,
+                    userFullName: user.fullName,
+                    profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+                });
+            } catch (saveError) {
+                // Handle errors saving the post
+                console.log('Error saving post to database:', saveError);
+                res.status(500).json({ error: 'Error saving post to database' });
+            }
+        });
+    } catch (err) {
+        // Handle unexpected errors
+        res.status(500).json({ error: err.message });
+        console.log('Unexpected error:', err);
+    }
+};
+
+// export const createVideoPost = async (req, res) => {
+//     try {
+//         // Handle file upload using multer
+//         upload.array('postmedia', 10)(req, res, async function (err) {
+//             if (err) {
+//                 console.log('Error uploading files:', err);
+//                 return res.status(500).json({ error: 'Error uploading files' });
+//             }
+
+//             const { text } = req.body;
+//             const userId = req.user._id;
+
+//             // Validate text input
+//             if (!text) {
+//                 return res.status(400).json({ error: 'Text field is required' });
+//             }
+
+//             // Find user by ID
+//             const user = await User.findById(userId);
+//             if (!user) {
+//                 return res.status(404).json({ error: 'User not found' });
+//             }
+
+//             // Validate text length
+//             const maxLength = 500;
+//             if (text.length > maxLength) {
+//                 return res.status(400).json({ error: `Text must be less than ${maxLength} characters` });
+//             }
+
+//             // Array to store uploaded video URLs
+//             let mediaFiles = [];
+
+//             // Process each uploaded file
+//             if (req.files) {
+//                 try {
+//                     for (const file of req.files) {
+//                         // Check if the file is a video
+//                         if (file.mimetype.startsWith('video')) {
+//                             // Upload video file to Cloudinary
+//                             const uploadedResponse = await cloudinary.uploader.upload(file.path, { resource_type: 'video' });
+//                             console.log('Video uploaded successfully:', uploadedResponse.secure_url);
+
+//                             // Store the uploaded video URL in mediaFiles array
+//                             mediaFiles.push({ type: 'video', url: uploadedResponse.secure_url });
+//                         } else {
+//                             // If the file is not a video, return an error
+//                             return res.status(400).json({ error: 'Only video files are allowed' });
+//                         }
+//                     }
+//                 } catch (uploadError) {
+//                     // Handle upload errors
+//                     console.log('Error during file upload:', uploadError);
+//                     return res.status(500).json({ error: 'Error during file upload' });
+//                 }
+//             }
+
+//             // Create a new Video document
+//             const newVideoPost = new Video({
+//                 postedBy: userId,
+//                 text,
+//                 media: mediaFiles, // Store uploaded video URLs
+//                 userFullName: user.fullName,
+//             });
+
+//             try {
+//                 // Save the new video post to the database
+//                 await newVideoPost.save();
+//                 console.log('Video post saved successfully:', newVideoPost._id);
+
+//                 // Optionally fetch user profile information
+//                 const userProfile = await UserProfile.findOne({ userId });
+
+//                 // Return a success response with the details of the saved video post
+//                 res.status(201).json({
+//                     _id: newVideoPost._id,
+//                     text: newVideoPost.text,
+//                     media: newVideoPost.media,
+//                     createdAt: newVideoPost.createdAt,
+//                     userFullName: user.fullName,
+//                     profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+//                 });
+//             } catch (saveError) {
+//                 // Handle errors saving the video post
+//                 console.log('Error saving video post:', saveError);
+//                 res.status(500).json({ error: 'Error saving video post' });
+//             }
+//         });
+//     } catch (err) {
+//         // Handle unexpected errors
+//         res.status(500).json({ error: err.message });
+//         console.log('Unexpected error:', err);
+//     }
+// };
+export const createPost = async (req, res) => {
+    try {
+        upload.single('postmedia')(req, res, async function (err) {
             if (err) {
                 console.log('Error uploading file:', err);
                 return res.status(500).json({ error: 'Error uploading file' });
@@ -65,15 +257,8 @@ export const uploadMediaPost = async (req, res) => {
                         const uploadedResponse = await cloudinary.uploader.upload(req.file.path);
                         console.log('Image uploaded successfully:', uploadedResponse.secure_url);
                         mediaFile = { type: 'image', url: uploadedResponse.secure_url };
-                    } else if (req.file.mimetype.startsWith('video')) {
-                        const uploadedResponse = await cloudinary.uploader.upload(req.file.path, {
-                            resource_type: "video",
-                            eager: [
-                                { streaming_profile: "hd", format: "m3u8" }
-                            ]
-                        });
-                        console.log('Video uploaded successfully:', uploadedResponse.secure_url);
-                        mediaFile = { type: 'video', url: uploadedResponse.secure_url };
+                    } else {
+                        return res.status(400).json({ error: 'Only image files are allowed' });
                     }
                 } catch (uploadError) {
                     console.log('Error during file upload:', uploadError);
@@ -81,7 +266,7 @@ export const uploadMediaPost = async (req, res) => {
                 }
             }
 
-            const newMediaPost = new Post({
+            const newPost = new Post({
                 postedBy: userId,
                 text,
                 media: mediaFile ? [mediaFile] : [],
@@ -89,16 +274,16 @@ export const uploadMediaPost = async (req, res) => {
             });
 
             try {
-                await newMediaPost.save();
-                console.log('Post saved successfully:', newMediaPost._id);
+                await newPost.save();
+                console.log('Post saved successfully:', newPost._id);
 
                 const userProfile = await UserProfile.findOne({ userId });
 
                 res.status(201).json({
-                    _id: newMediaPost._id,
-                    text: newMediaPost.text,
-                    media: newMediaPost.media,
-                    createdAt: newMediaPost.createdAt,
+                    _id: newPost._id,
+                    text: newPost.text,
+                    media: newPost.media,
+                    createdAt: newPost.createdAt,
                     userFullName: user.fullName,
                     profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
                 });
@@ -114,9 +299,9 @@ export const uploadMediaPost = async (req, res) => {
 };
 
 
-// export const createPost = async (req, res) => {
+// export const uploadMediaPost = async (req, res) => {
 //     try {
-//         upload.single('postmedia')(req, res, async function (err) {
+//         upload.single('media')(req, res, async function (err) {
 //             if (err) {
 //                 console.log('Error uploading file:', err);
 //                 return res.status(500).json({ error: 'Error uploading file' });
@@ -162,7 +347,7 @@ export const uploadMediaPost = async (req, res) => {
 //                 }
 //             }
 
-//             const newPost = new Post({
+//             const newMediaPost = new Post({
 //                 postedBy: userId,
 //                 text,
 //                 media: mediaFile ? [mediaFile] : [],
@@ -170,16 +355,16 @@ export const uploadMediaPost = async (req, res) => {
 //             });
 
 //             try {
-//                 await newPost.save();
-//                 console.log('Post saved successfully:', newPost._id);
+//                 await newMediaPost.save();
+//                 console.log('Post saved successfully:', newMediaPost._id);
 
 //                 const userProfile = await UserProfile.findOne({ userId });
 
 //                 res.status(201).json({
-//                     _id: newPost._id,
-//                     text: newPost.text,
-//                     media: newPost.media,
-//                     createdAt: newPost.createdAt,
+//                     _id: newMediaPost._id,
+//                     text: newMediaPost.text,
+//                     media: newMediaPost.media,
+//                     createdAt: newMediaPost.createdAt,
 //                     userFullName: user.fullName,
 //                     profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
 //                 });
@@ -193,6 +378,7 @@ export const uploadMediaPost = async (req, res) => {
 //         console.log('Unexpected error:', err);
 //     }
 // };
+
 
 
 export const likePost = async (req, res) => {

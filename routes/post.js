@@ -1,12 +1,12 @@
 import express from 'express';
-import { getPost ,uploadMediaPost, deletePost, getFeedPosts, getUserPosts,likePost ,addComment,getComments ,deleteComment ,getUserDetails} from '../controllers/post.js';
+import { getPost ,createPost ,createVideoPost,deletePost, getFeedPosts, getUserPosts,likePost ,addComment,getComments ,deleteComment ,getUserDetails} from '../controllers/post.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 router.get('/post/:id', authMiddleware, getPost); 
 
-
-router.put('/create-post',authMiddleware,uploadMediaPost)
+router.put('/create-video',authMiddleware,createVideoPost)
+router.put('/create-post',authMiddleware,createPost)
 // router.put('/create-post',authMiddleware,uploadMediaPost);
 router.delete('/post/:id', authMiddleware, deletePost);
 router.get('/feed', authMiddleware, getFeedPosts); 

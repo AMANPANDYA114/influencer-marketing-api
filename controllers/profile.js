@@ -177,6 +177,48 @@ export const updateUserProfile = async (req, res) => {
 
 
 
+// export const getUserProfile = async (req, res) => {
+//   try {
+//     const authHeader = req.headers.authorization;
+//     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+//       return res.status(401).json({ success: false, message: 'Unauthorized: Missing or invalid token' });
+//     }
+
+//     const token = authHeader.split(' ')[1];
+
+//     if (!token) {
+//       return res.status(401).json({ success: false, message: 'Unauthorized: No token provided' });
+//     }
+
+//     // Verify the token
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//     const userId = decoded.userId;
+
+   
+//     let userProfile = await UserProfile.findOne({ userId });
+
+//     if (!userProfile || !userProfile.fullName || !userProfile.username) {
+//       const user = await User.findById(userId);
+//       if (!user) {
+//         return res.status(404).json({ success: false, message: 'User not found' });
+//       }
+    
+//       return res.status(200).json({ success: true, user: { fullName: user.fullName, username: user.username, profilePicUrl: userProfile ? userProfile.profilePicUrl : user.profilePicUrl, backgroundImage: userProfile ? userProfile.backgroundImage : null } });
+//     }
+
+    
+//     const { fullName, username, profilePicUrl, userBio, userRole, backgroundImage } = userProfile;
+//     res.status(200).json({ success: true, user: { fullName, username, profilePicUrl, userBio, userRole, backgroundImage } });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ success: false, message: 'Error fetching profile' });
+//   }
+// };
+
+
+
+
+
 export const getUserProfile = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -194,7 +236,6 @@ export const getUserProfile = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.userId;
 
-   
     let userProfile = await UserProfile.findOne({ userId });
 
     if (!userProfile || !userProfile.fullName || !userProfile.username) {
@@ -203,12 +244,11 @@ export const getUserProfile = async (req, res) => {
         return res.status(404).json({ success: false, message: 'User not found' });
       }
     
-      return res.status(200).json({ success: true, user: { fullName: user.fullName, username: user.username, profilePicUrl: userProfile ? userProfile.profilePicUrl : user.profilePicUrl, backgroundImage: userProfile ? userProfile.backgroundImage : null } });
+      return res.status(200).json({ success: true, user: { userId, fullName: user.fullName, username: user.username, profilePicUrl: userProfile ? userProfile.profilePicUrl : user.profilePicUrl, backgroundImage: userProfile ? userProfile.backgroundImage : null } });
     }
 
-    
     const { fullName, username, profilePicUrl, userBio, userRole, backgroundImage } = userProfile;
-    res.status(200).json({ success: true, user: { fullName, username, profilePicUrl, userBio, userRole, backgroundImage } });
+    res.status(200).json({ success: true, user: { userId, fullName, username, profilePicUrl, userBio, userRole, backgroundImage } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Error fetching profile' });
