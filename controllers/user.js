@@ -247,33 +247,44 @@ export const followUser = async (req, res) => {
 };
 
 
+
 export const unfollowUser = async (req, res) => {
   try {
     const userId = req.user._id;
     const unfollowUserId = req.params.userId;
 
+    console.log(`User ID: ${userId}`);
+    console.log(`Unfollow User ID: ${unfollowUserId}`);
+
     const user = await User.findById(userId);
     const unfollowUser = await User.findById(unfollowUserId);
 
     if (!unfollowUser) {
+      console.log('Unfollow user not found');
       return res.status(404).json({ error: 'User not found' });
     }
 
     if (!user.following.includes(unfollowUserId)) {
+      console.log('User is not following the specified user');
       return res.status(400).json({ error: 'Not following this user' });
     }
 
-    user.following = user.following.filter(id => id.toString() !== unfollowUserId.toString());
-    unfollowUser.followers = unfollowUser.followers.filter(id => id.toString() !== userId.toString());
+    // Update the user's following array
+    await User.findByIdAndUpdate(userId, { $pull: { following: unfollowUserId } });
 
-    await user.save();
-    await unfollowUser.save();
+    // Update the unfollowed user's followers array
+    await User.findByIdAndUpdate(unfollowUserId, { $pull: { followers: userId } });
+
+    console.log(`User ${userId} unfollowed user ${unfollowUserId}`);
 
     res.status(200).json({ message: 'User unfollowed successfully' });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
+
+
 
 
 export const suggestedUsers = async (req, res) => {

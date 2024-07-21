@@ -33,7 +33,7 @@ router.post('/createcategory', authMiddleware, createCategory);
 router.put('/updatecategory/:id', authMiddleware, updateCategory);
 router.delete('/deletecategory/:id', authMiddleware, deleteCategory);
 router.post('/follow/:userId', authMiddleware, followUser);
-router.post('/unfollow/:userId', authMiddleware, unfollowUser);
+router.put('/unfollow/:userId', authMiddleware, unfollowUser);
 router.get('/suggested-users', authMiddleware, suggestedUsers);
 
 router.get('/getevents', getEvents);
