@@ -134,7 +134,6 @@ export const getPost = async (req, res) => {
 
 
 export const createVideoPost = async (req, res) => {
-    // Handle file upload using multer
     upload.array('postmedia', 10)(req, res, async function (err) {
         if (err) {
             console.log('Error uploading files:', err);
@@ -227,7 +226,6 @@ export const createVideoPost = async (req, res) => {
         }
     });
 };
-
 export const createPost = async (req, res) => {
     try {
         upload.single('postmedia')(req, res, async function (err) {
