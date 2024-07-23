@@ -13,8 +13,7 @@
     }
   ],
   "functions": {
-    "limits": {
-      "maxLambdaSize": "20mb"
-    }
+    "maxLambdaSize": "20mb"
   }
 }
+
