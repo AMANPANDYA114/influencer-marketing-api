@@ -86,7 +86,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import cors from "cors";
+
 import userRoutes from "./routes/user.js";
 import postRoutes from "./routes/post.js";
 import cookieParser from "cookie-parser";
@@ -103,12 +103,12 @@ const TIMEOUT = 10 * 60 * 1000; // 10 minutes
 server.setTimeout(TIMEOUT);
 
 // Use CORS to allow all methods and origins, especially for localhost:3000
-app.use(cors({
-  origin:  'http://192.168.0.106:8000',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+// app.use(cors({
+//   origin:  'http://192.168.0.106:8000',
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization'],
+//   credentials: true
+// }));
 
 app.use(express.json());
 app.use(cookieParser());
