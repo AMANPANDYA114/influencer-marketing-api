@@ -12,7 +12,6 @@
 
 
 
-
 import multer from 'multer';
 
 // Set up storage configuration
@@ -32,12 +31,12 @@ const upload = multer({
     fileSize: fileSizeLimit // Set the file size limit
   },
   fileFilter: function (req, file, cb) {
-    // Optional: add file type filters if needed
-    const allowedTypes = ['video/mp4', 'video/mkv']; // Example for video files
+    // Define allowed file types
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/mkv'];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only video files are allowed.'));
+      cb(new Error('Invalid file type. Only images and video files are allowed.'));
     }
   }
 });
