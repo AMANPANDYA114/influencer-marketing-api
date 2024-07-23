@@ -104,7 +104,7 @@ server.setTimeout(TIMEOUT);
 
 // Use CORS to allow all methods and origins, especially for localhost:3000
 app.use(cors({
-  origin: 'http://localhost:5000',
+  origin:  'http://192.168.0.106:8000',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
