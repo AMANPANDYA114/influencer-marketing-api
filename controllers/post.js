@@ -124,44 +124,56 @@ export const createVideoPost = async (req, res) => {
     }
 };
 
-
 export const createPost = async (req, res) => {
     try {
+        console.log('Request body:', req.body);
+        console.log('Request file:', req.file);
+        
         upload.single('postmedia')(req, res, async function (err) {
             if (err) {
                 console.log('Error uploading file:', err);
                 return res.status(500).json({ error: 'Error uploading file' });
             }
 
+            console.log('After multer middleware - Request file:', req.file);
+
             const { text } = req.body;
             const userId = req.user._id;
 
+            console.log('Text from body:', text);
+            console.log('User ID from token:', userId);
+
             if (!text) {
+                console.log('Text field is missing');
                 return res.status(400).json({ error: 'Text field is required' });
             }
 
             const user = await User.findById(userId);
             if (!user) {
+                console.log('User not found:', userId);
                 return res.status(404).json({ error: 'User not found' });
             }
 
             const maxLength = 500;
             if (text.length > maxLength) {
+                console.log('Text length exceeds maximum allowed length');
                 return res.status(400).json({ error: `Text must be less than ${maxLength} characters` });
             }
 
             let mediaFile = null;
             if (req.file) {
                 try {
+                    console.log('File details for Cloudinary upload:', req.file);
                     if (req.file.mimetype.startsWith('image')) {
                         const uploadedResponse = await cloudinary.uploader.upload(req.file.path);
-                        console.log('Image uploaded successfully:', uploadedResponse.secure_url);
+                        console.log('Cloudinary upload response:', uploadedResponse);
                         mediaFile = { type: 'image', url: uploadedResponse.secure_url };
                     } else {
+                        console.log('File type is not allowed:', req.file.mimetype);
                         return res.status(400).json({ error: 'Only image files are allowed' });
                     }
                 } catch (uploadError) {
-                    console.log('Error during file upload:', uploadError);
+                    console.log('Error during Cloudinary file upload:', uploadError);
                     return res.status(500).json({ error: 'Error during file upload' });
                 }
             }
@@ -174,10 +186,12 @@ export const createPost = async (req, res) => {
             });
 
             try {
+                console.log('Saving new post:', newPost);
                 await newPost.save();
                 console.log('Post saved successfully:', newPost._id);
 
                 const userProfile = await UserProfile.findOne({ userId });
+                console.log('User profile:', userProfile);
 
                 res.status(201).json({
                     _id: newPost._id,
@@ -193,10 +207,83 @@ export const createPost = async (req, res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
         console.log('Unexpected error:', err);
+        res.status(500).json({ error: err.message });
     }
 };
+
+// export const createPost = async (req, res) => {
+//     try {
+//         upload.single('postmedia')(req, res, async function (err) {
+//             if (err) {
+//                 console.log('Error uploading file:', err);
+//                 return res.status(500).json({ error: 'Error uploading file' });
+//             }
+
+//             const { text } = req.body;
+//             const userId = req.user._id;
+
+//             if (!text) {
+//                 return res.status(400).json({ error: 'Text field is required' });
+//             }
+
+//             const user = await User.findById(userId);
+//             if (!user) {
+//                 return res.status(404).json({ error: 'User not found' });
+//             }
+
+//             const maxLength = 500;
+//             if (text.length > maxLength) {
+//                 return res.status(400).json({ error: `Text must be less than ${maxLength} characters` });
+//             }
+
+//             let mediaFile = null;
+//             if (req.file) {
+//                 try {
+//                     if (req.file.mimetype.startsWith('image')) {
+//                         const uploadedResponse = await cloudinary.uploader.upload(req.file.path);
+//                         console.log('Image uploaded successfully:', uploadedResponse.secure_url);
+//                         mediaFile = { type: 'image', url: uploadedResponse.secure_url };
+//                     } else {
+//                         return res.status(400).json({ error: 'Only image files are allowed' });
+//                     }
+//                 } catch (uploadError) {
+//                     console.log('Error during file upload:', uploadError);
+//                     return res.status(500).json({ error: 'Error during file upload' });
+//                 }
+//             }
+
+//             const newPost = new Post({
+//                 postedBy: userId,
+//                 text,
+//                 media: mediaFile ? [mediaFile] : [],
+//                 userFullName: user.fullName,
+//             });
+
+//             try {
+//                 await newPost.save();
+//                 console.log('Post saved successfully:', newPost._id);
+
+//                 const userProfile = await UserProfile.findOne({ userId });
+
+//                 res.status(201).json({
+//                     _id: newPost._id,
+//                     text: newPost.text,
+//                     media: newPost.media,
+//                     createdAt: newPost.createdAt,
+//                     userFullName: user.fullName,
+//                     profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+//                 });
+//             } catch (saveError) {
+//                 console.log('Error saving post:', saveError);
+//                 res.status(500).json({ error: 'Error saving post' });
+//             }
+//         });
+//     } catch (err) {
+//         res.status(500).json({ error: err.message });
+//         console.log('Unexpected error:', err);
+//     }
+// };
 
 
 
