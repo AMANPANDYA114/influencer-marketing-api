@@ -1,12 +1,23 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/*.js", "use": "@vercel/node" }
+    {
+      "src": "api/*.js",
+      "use": "@vercel/node"
+    }
   ],
   "routes": [
-    { "src": "/api/upload", "methods": ["POST"], "dest": "api/upload.js" }
+    {
+      "src": "/api/upload",
+      "methods": ["POST"],
+      "dest": "api/upload.js"
+    }
   ],
-  "limits": {
-    "maxPayload": "20mb"
+  "functions": {
+    "api/upload.js": {
+      "maxDuration": 10,
+      "memory": 1024,
+      "maxLambdaSize": "50mb"
+    }
   }
 }
