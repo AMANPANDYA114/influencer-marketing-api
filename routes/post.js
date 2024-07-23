@@ -6,7 +6,7 @@ const router = express.Router();
 router.get('/post/:id', authMiddleware, getPost); 
 
 router.put('/create-video',authMiddleware,createVideoPost)
-router.put('/create-post',authMiddleware,createPost)
+router.post('/create-post',authMiddleware,createPost)
 // router.put('/create-post',authMiddleware,uploadMediaPost);
 router.delete('/post/:id', authMiddleware, deletePost);
 router.get('/feed', authMiddleware, getFeedPosts); 
