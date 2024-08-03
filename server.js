@@ -1,9 +1,9 @@
+import cookieParser from "cookie-parser";
+import dotenv from "dotenv";
 import express from "express";
 import mongoose from "mongoose";
-import dotenv from "dotenv";
-import userRoutes from "./routes/user.js";
 import postRoutes from "./routes/post.js";
-import cookieParser from "cookie-parser";
+import userRoutes from "./routes/user.js";
 
 dotenv.config();
 const app = express();

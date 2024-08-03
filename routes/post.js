@@ -1,5 +1,5 @@
 import express from 'express';
-import { getPost ,createPost ,createVideoPost,deletePost, getFeedPosts, getUserPosts,likePost ,addComment,getComments ,deleteComment ,getUserDetails} from '../controllers/post.js';
+import { addComment, createPost, createVideoPost, deleteComment, deletePost, getComments, getFeedPosts, getPost, getUserDetails, getUserPosts, getUserPostsById, likePost } from '../controllers/post.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -16,5 +16,5 @@ router.post('/post/:id/comment',authMiddleware, addComment);
 router.get('/post/:id/comments',authMiddleware, getComments);
 router.delete('/post/:postId/comments/:commentId', authMiddleware, deleteComment);
 router.get('/getuserdetails/:id', getUserDetails);
-
+router.get('/myposts', authMiddleware, getUserPostsById);
 export default router;

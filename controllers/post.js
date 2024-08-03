@@ -1,11 +1,10 @@
 
-import User from '../models/user.js';
+import upload from '../middlewares/multer.js';
 import Post from '../models/post.js';
 import UserProfile from '../models/profile .js';
+import User from '../models/user.js';
 import cloudinary from '../utils/cloudinary.js';
-import upload from '../middlewares/multer.js';
 
-import Video from '../models/Video.js';
 // upload post vidoe or with images 
 
 
@@ -212,78 +211,6 @@ export const createPost = async (req, res) => {
     }
 };
 
-// export const createPost = async (req, res) => {
-//     try {
-//         upload.single('postmedia')(req, res, async function (err) {
-//             if (err) {
-//                 console.log('Error uploading file:', err);
-//                 return res.status(500).json({ error: 'Error uploading file' });
-//             }
-
-//             const { text } = req.body;
-//             const userId = req.user._id;
-
-//             if (!text) {
-//                 return res.status(400).json({ error: 'Text field is required' });
-//             }
-
-//             const user = await User.findById(userId);
-//             if (!user) {
-//                 return res.status(404).json({ error: 'User not found' });
-//             }
-
-//             const maxLength = 500;
-//             if (text.length > maxLength) {
-//                 return res.status(400).json({ error: `Text must be less than ${maxLength} characters` });
-//             }
-
-//             let mediaFile = null;
-//             if (req.file) {
-//                 try {
-//                     if (req.file.mimetype.startsWith('image')) {
-//                         const uploadedResponse = await cloudinary.uploader.upload(req.file.path);
-//                         console.log('Image uploaded successfully:', uploadedResponse.secure_url);
-//                         mediaFile = { type: 'image', url: uploadedResponse.secure_url };
-//                     } else {
-//                         return res.status(400).json({ error: 'Only image files are allowed' });
-//                     }
-//                 } catch (uploadError) {
-//                     console.log('Error during file upload:', uploadError);
-//                     return res.status(500).json({ error: 'Error during file upload' });
-//                 }
-//             }
-
-//             const newPost = new Post({
-//                 postedBy: userId,
-//                 text,
-//                 media: mediaFile ? [mediaFile] : [],
-//                 userFullName: user.fullName,
-//             });
-
-//             try {
-//                 await newPost.save();
-//                 console.log('Post saved successfully:', newPost._id);
-
-//                 const userProfile = await UserProfile.findOne({ userId });
-
-//                 res.status(201).json({
-//                     _id: newPost._id,
-//                     text: newPost.text,
-//                     media: newPost.media,
-//                     createdAt: newPost.createdAt,
-//                     userFullName: user.fullName,
-//                     profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
-//                 });
-//             } catch (saveError) {
-//                 console.log('Error saving post:', saveError);
-//                 res.status(500).json({ error: 'Error saving post' });
-//             }
-//         });
-//     } catch (err) {
-//         res.status(500).json({ error: err.message });
-//         console.log('Unexpected error:', err);
-//     }
-// };
 
 
 
@@ -569,5 +496,32 @@ export const getUserDetails = async (req, res) => {
         res.status(200).json(userDetails);
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+};
+
+export const getUserPostsById = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const posts = await Post.find({ postedBy: userId }).sort({
+            createdAt: -1,
+        });
+
+        const userProfile = await UserProfile.findOne({ userId });
+
+        const postsWithProfilePics = posts.map(post => ({
+            ...post._doc,
+            profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+            likeCount: post.likes.length,
+        }));
+
+        res.status(200).json(postsWithProfilePics);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 };
