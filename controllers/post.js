@@ -499,34 +499,6 @@ export const getUserDetails = async (req, res) => {
     }
 };
 
-// export const getUserPostsById = async (req, res) => {
-//     try {
-//         const userId = req.user._id;
-
-//         const user = await User.findById(userId);
-//         if (!user) {
-//             return res.status(404).json({ error: "User not found" });
-//         }
-
-//         const posts = await Post.find({ postedBy: userId }).sort({
-//             createdAt: -1,
-//         });
-
-//         const userProfile = await UserProfile.findOne({ userId });
-
-//         const postsWithProfilePics = posts.map(post => ({
-//             ...post._doc,
-//             profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
-//             likeCount: post.likes.length,
-//         }));
-
-//         res.status(200).json(postsWithProfilePics);
-//     } catch (error) {
-//         res.status(500).json({ error: error.message });
-//     }
-// };
-
-
 
 
 export const getUserPostsById = async (req, res) => {
@@ -553,6 +525,45 @@ export const getUserPostsById = async (req, res) => {
                 likeCount: post.likes.length,
             };
         }).filter(post => post.media.length > 0); // Ensure only posts with image media are returned
+
+        res.status(200).json(postsWithProfilePics);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+
+
+
+
+
+
+
+
+export const getuservideos = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        const posts = await Post.find({ postedBy: userId }).sort({ createdAt: -1 });
+
+        const userProfile = await UserProfile.findOne({ userId });
+
+        const postsWithProfilePics = posts.map(post => {
+            const { media, ...rest } = post._doc;
+            // Filter out video media
+            const imageMedia = media.filter(mediaItem => mediaItem.type === 'video');
+            return {
+                ...rest,
+                media: imageMedia,
+                profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+                likeCount: post.likes.length,
+            };
+        }).filter(post => post.media.length > 0); 
 
         res.status(200).json(postsWithProfilePics);
     } catch (error) {

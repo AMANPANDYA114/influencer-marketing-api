@@ -1,5 +1,5 @@
 import express from 'express';
-import { addComment, createPost, createVideoPost, deleteComment, deletePost, getComments, getFeedPosts, getPost, getUserDetails, getUserPosts, getUserPostsById, likePost } from '../controllers/post.js';
+import { addComment, createPost, createVideoPost, deleteComment, deletePost, getComments, getFeedPosts, getPost, getUserDetails, getUserPosts, getUserPostsById, getuservideos, likePost } from '../controllers/post.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -17,4 +17,5 @@ router.get('/post/:id/comments',authMiddleware, getComments);
 router.delete('/post/:postId/comments/:commentId', authMiddleware, deleteComment);
 router.get('/getuserdetails/:id', getUserDetails);
 router.get('/myposts', authMiddleware, getUserPostsById);
+router.get('/myvideos', authMiddleware, getuservideos);
 export default router;
