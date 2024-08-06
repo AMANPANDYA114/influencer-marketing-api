@@ -16,6 +16,7 @@ router.post('/post/:id/comment',authMiddleware, addComment);
 router.get('/post/:id/comments',authMiddleware, getComments);
 router.delete('/post/:postId/comments/:commentId', authMiddleware, deleteComment);
 router.get('/getuserdetails/:id', getUserDetails);
-router.get('/myposts/id' ,authMiddleware, getUserPostsById);
+router.get('/myposts/:id', authMiddleware, getUserPostsById);
+
 router.get('/myvideos', authMiddleware, getuservideos);
 export default router;
