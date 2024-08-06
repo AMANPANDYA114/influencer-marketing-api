@@ -410,15 +410,15 @@ export const deletePost = async (req, res) => {
             return res.status(401).json({ error: "Unauthorized to delete this post" });
         }
 
-        // Check if post has media (images or videos)
+      
         if (post.media && post.media.length > 0) {
             await Promise.all(post.media.map(async (mediaItem) => {
                 if (mediaItem.type === 'video') {
-                    // Handle video deletion from Cloudinary
+                   
                     const videoId = mediaItem.url.split("/").pop().split(".")[0];
                     await cloudinary.uploader.destroy(videoId);
                 } else if (mediaItem.type === 'image') {
-                    // Handle image deletion from Cloudinary if needed
+                   
                     const imageId = mediaItem.url.split("/").pop().split(".")[0];
                     await cloudinary.uploader.destroy(imageId);
                 }
@@ -541,11 +541,16 @@ export const getUserPostsById = async (req, res) => {
 
 export const getuservideos = async (req, res) => {
     try {
-        const userId = req.user._id;
+        const userId = req.params.id; 
+
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
 
         const user = await User.findById(userId);
+     
         if (!user) {
-            return res.status(404).json({ error: "User not found" });
+            return res.status(404).json({ error: 'User not found' });
         }
 
         const posts = await Post.find({ postedBy: userId }).sort({ createdAt: -1 });

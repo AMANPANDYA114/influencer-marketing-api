@@ -18,5 +18,5 @@ router.delete('/post/:postId/comments/:commentId', authMiddleware, deleteComment
 router.get('/getuserdetails/:id', getUserDetails);
 router.get('/myposts/:id', authMiddleware, getUserPostsById);
 
-router.get('/myvideos', authMiddleware, getuservideos);
+router.get('/myvideos/id', authMiddleware, getuservideos);
 export default router;
