@@ -6,10 +6,10 @@ import User from '../models/user.js';
 import cloudinary from '../utils/cloudinary.js';
 
 // upload post vidoe or with images 
-
 export const incrementVideoView = async (req, res) => {
     try {
         const { postId, mediaId } = req.params;
+        const userId = req.user._id;  // Assuming the user ID is available in `req.user`
 
         // Find the post by ID
         const post = await Post.findById(postId);
@@ -17,14 +17,20 @@ export const incrementVideoView = async (req, res) => {
             return res.status(404).json({ error: "Post not found" });
         }
 
-        // Find the media item by ID and increment the view count
+        // Find the media item by ID
         const mediaItem = post.media.id(mediaId);
         if (!mediaItem || mediaItem.type !== 'video') {
             return res.status(404).json({ error: "Video not found" });
         }
 
-        // Increment the view count
+        // Check if the user has already viewed this video
+        if (mediaItem.viewedBy.includes(userId)) {
+            return res.status(200).json({ message: "View count already updated", views: mediaItem.views });
+        }
+
+        // Increment the view count and add the user ID to the viewed list
         mediaItem.views = (mediaItem.views || 0) + 1;
+        mediaItem.viewedBy.push(userId);
 
         // Save the updated post
         await post.save();
@@ -34,6 +40,34 @@ export const incrementVideoView = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// export const incrementVideoView = async (req, res) => {
+//     try {
+//         const { postId, mediaId } = req.params;
+
+//         // Find the post by ID
+//         const post = await Post.findById(postId);
+//         if (!post) {
+//             return res.status(404).json({ error: "Post not found" });
+//         }
+
+//         // Find the media item by ID and increment the view count
+//         const mediaItem = post.media.id(mediaId);
+//         if (!mediaItem || mediaItem.type !== 'video') {
+//             return res.status(404).json({ error: "Video not found" });
+//         }
+
+//         // Increment the view count
+//         mediaItem.views = (mediaItem.views || 0) + 1;
+
+//         // Save the updated post
+//         await post.save();
+
+//         res.status(200).json({ message: "View count updated successfully", views: mediaItem.views });
+//     } catch (err) {
+//         res.status(500).json({ error: err.message });
+//     }
+// };
 export const getPost = async (req, res) => {
     try {
         const post = await Post.findById(req.params.id)
@@ -293,7 +327,7 @@ export const getFeedPosts = async (req, res) => {
             // Fetch the user profile for each post
             const userProfile = await UserProfile.findOne({ userId: post.postedBy._id });
 
-            // Map through media items to include view counts for videos
+            
             const updatedMedia = post.media.map(mediaItem => {
                 if (mediaItem.type === 'video') {
                     // Include view counts for video media
@@ -322,40 +356,7 @@ export const getFeedPosts = async (req, res) => {
 };
 
 
-// // Get feed posts for the logged-in user
-// export const getFeedPosts = async (req, res) => {
-//     try {
-//         const userId = req.user._id;
 
-//         const user = await User.findById(userId);
-//         if (!user) {
-//             return res.status(404).json({ error: "User not found" });
-//         }
-
-//         const following = [...user.following, userId];
-
-//         if (following.length === 0) {
-//             return res.status(200).json({ message: "No users followed", posts: [] });
-//         }
-
-//         const feedPosts = await Post.find({ postedBy: { $in: following } })
-//             .sort({ createdAt: -1 })
-//             .populate('postedBy', 'fullName username');
-
-//         const postsWithProfilePics = await Promise.all(feedPosts.map(async (post) => {
-//             const userProfile = await UserProfile.findOne({ userId: post.postedBy._id });
-//             return {
-//                 ...post._doc,
-//                 profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
-//                 likeCount: post.likes.length
-//             };
-//         }));
-
-//         res.status(200).json(postsWithProfilePics);
-//     } catch (err) {
-//         res.status(500).json({ error: err.message });
-//     }
-// };
 
 
 export const getUserPosts = async (req, res) => {
