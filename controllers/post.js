@@ -302,25 +302,14 @@ export const getFeedPosts = async (req, res) => {
             const userProfile = await UserProfile.findOne({ userId: post.postedBy._id });
 
             
-            const updatedMedia = post.media.map(mediaItem => {
-                if (mediaItem.type === 'video') {
-                  
-                    return {
-                        ...mediaItem._doc,
-                        views: mediaItem.views || 0
-                    };
-                } else {
-                    
-                    return mediaItem;
-                }
-            });
+          
 
             return {
                 ...post._doc,
-                media: updatedMedia,
+               
                 profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
                 likeCount: post.likes.length,
-                veiwers: user.following.length
+                veiwers: user.followers.length,
             };
         }));
 
