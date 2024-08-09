@@ -275,6 +275,7 @@ export const likePost = async (req, res) => {
     }
 };
 
+
 export const getFeedPosts = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -318,7 +319,8 @@ export const getFeedPosts = async (req, res) => {
                 ...post._doc,
                 media: updatedMedia,
                 profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
-                likeCount: post.likes.length
+                likeCount: post.likes.length,
+                veiwers: user.following.length
             };
         }));
 
