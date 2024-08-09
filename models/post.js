@@ -2,15 +2,6 @@
 
 import mongoose from 'mongoose';
 
-
-const mediaSchema = new mongoose.Schema({
-    type: { type: String, enum: ['image', 'video'] },
-    url: { type: String },
-    views: { type: Number, default: 0 },  
-    viewedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]  
-});
-
-
 const postSchema = new mongoose.Schema({
     postedBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -21,7 +12,10 @@ const postSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    media: [mediaSchema],  // Embed the media schema here
+    media: [{
+        type: { type: String, enum: ['image', 'video'] },
+        url: { type: String }
+    }],
     userFullName: {
         type: String,
         required: true
@@ -58,12 +52,9 @@ const postSchema = new mongoose.Schema({
     }]
 });
 
-
 const Post = mongoose.model('Post', postSchema);
 
 export default Post;
-
-
 
 
 
