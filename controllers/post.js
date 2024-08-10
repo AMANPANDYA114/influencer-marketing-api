@@ -241,49 +241,6 @@ export const likePost = async (req, res) => {
 };
 
 
-// export const getFeedPosts = async (req, res) => {
-//     try {
-//         const userId = req.user._id;
-
-//         const user = await User.findById(userId);
-//         if (!user) {
-//             return res.status(404).json({ error: "User not found" });
-//         }
-
-//         const following = [...user.following, userId];
-
-//         if (following.length === 0) {
-//             return res.status(200).json({ message: "No users followed", posts: [] });
-//         }
-
-      
-//         const feedPosts = await Post.find({ postedBy: { $in: following } })
-//             .sort({ createdAt: -1 })
-//             .populate('postedBy', 'fullName username');
-
-        
-//         const postsWithProfilePics = await Promise.all(feedPosts.map(async (post) => {
-           
-//             const userProfile = await UserProfile.findOne({ userId: post.postedBy._id });
-
-            
-          
-
-//             return {
-//                 ...post._doc,
-               
-//                 profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
-//                 likeCount: post.likes.length,
-//                 veiwers: user.followers.length,
-//             };
-//         }));
-
-//         res.status(200).json(postsWithProfilePics);
-//     } catch (err) {
-//         res.status(500).json({ error: err.message });
-//     }
-// };
-
 
 
 export const getFeedPosts = async (req, res) => {
@@ -311,7 +268,7 @@ export const getFeedPosts = async (req, res) => {
             // Map through media items to include view count
             const postsWithViews = post.media.map(mediaItem => ({
                 ...mediaItem._doc,
-                viewCount: veiwer
+                viewCount: mediaItem.views.length
             }));
 
             return {
@@ -627,25 +584,25 @@ export const incrementVideoView = async (req, res) => {
     try {
         const { userid, videoid } = req.params;
 
-        // Find the post that contains the video with the given videoid
+ 
         const post = await Post.findOne({ 'media._id': videoid });
         if (!post) {
             return res.status(404).json({ error: 'Post not found' });
         }
 
-        // Find the video within the post's media array
+      
         const video = post.media.find(mediaItem => mediaItem._id.toString() === videoid.toString());
         if (!video) {
             return res.status(404).json({ error: 'Video not found in the post' });
         }
 
-        // Check if the user has already viewed the video
+       
         const hasViewed = video.views.some(view => view.userId.toString() === userid.toString());
         if (hasViewed) {
             return res.status(200).json({ message: 'View already recorded' });
         }
 
-        // If not viewed, add the user to the views array
+        
         video.views.push({ userId: userid });
         await post.save();
 
@@ -662,7 +619,7 @@ export const getViewCount = async (req, res) => {
             return res.status(400).json({ error: 'Video ID is required' });
         }
 
-        const post = await Post.findById(videoId).select('viewCount'); // Select only the viewCount field
+        const post = await Post.findById(videoId).select('viewCount'); 
         if (!post) {
             return res.status(404).json({ error: 'Post not found' });
         }
