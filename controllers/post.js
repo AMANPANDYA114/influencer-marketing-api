@@ -241,6 +241,51 @@ export const likePost = async (req, res) => {
 };
 
 
+// export const getFeedPosts = async (req, res) => {
+//     try {
+//         const userId = req.user._id;
+
+//         const user = await User.findById(userId);
+//         if (!user) {
+//             return res.status(404).json({ error: "User not found" });
+//         }
+
+//         const following = [...user.following, userId];
+
+//         if (following.length === 0) {
+//             return res.status(200).json({ message: "No users followed", posts: [] });
+//         }
+
+      
+//         const feedPosts = await Post.find({ postedBy: { $in: following } })
+//             .sort({ createdAt: -1 })
+//             .populate('postedBy', 'fullName username');
+
+        
+//         const postsWithProfilePics = await Promise.all(feedPosts.map(async (post) => {
+           
+//             const userProfile = await UserProfile.findOne({ userId: post.postedBy._id });
+
+            
+          
+
+//             return {
+//                 ...post._doc,
+               
+//                 profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+//                 likeCount: post.likes.length,
+//                 veiwers: user.followers.length,
+//             };
+//         }));
+
+//         res.status(200).json(postsWithProfilePics);
+//     } catch (err) {
+//         res.status(500).json({ error: err.message });
+//     }
+// };
+
+
+
 export const getFeedPosts = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -256,25 +301,24 @@ export const getFeedPosts = async (req, res) => {
             return res.status(200).json({ message: "No users followed", posts: [] });
         }
 
-      
         const feedPosts = await Post.find({ postedBy: { $in: following } })
             .sort({ createdAt: -1 })
             .populate('postedBy', 'fullName username');
 
-        
         const postsWithProfilePics = await Promise.all(feedPosts.map(async (post) => {
-           
             const userProfile = await UserProfile.findOne({ userId: post.postedBy._id });
 
-            
-          
+            // Map through media items to include view count
+            const postsWithViews = post.media.map(mediaItem => ({
+                ...mediaItem._doc,
+                viewCount: veiwer
+            }));
 
             return {
                 ...post._doc,
-               
                 profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+                media: postsWithViews,
                 likeCount: post.likes.length,
-                veiwers: user.followers.length,
             };
         }));
 
@@ -283,8 +327,6 @@ export const getFeedPosts = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
-
 
 
 
@@ -581,45 +623,37 @@ export const getUserPostsById = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-export const incrementViewCount = async (req, res) => {
+export const incrementVideoView = async (req, res) => {
     try {
-        const { videoId, userId } = req.params;
+        const { userid, videoid } = req.params;
 
-        if (!videoId || !userId) {
-            return res.status(400).json({ error: 'Video ID and User ID are required' });
-        }
-
-        const post = await Post.findById(videoId);
+        // Find the post that contains the video with the given videoid
+        const post = await Post.findOne({ 'media._id': videoid });
         if (!post) {
             return res.status(404).json({ error: 'Post not found' });
         }
 
-       
-        if (!Array.isArray(post.viewers)) {
-            post.viewers = [];
+        // Find the video within the post's media array
+        const video = post.media.find(mediaItem => mediaItem._id.toString() === videoid.toString());
+        if (!video) {
+            return res.status(404).json({ error: 'Video not found in the post' });
         }
 
-        
-        const hasViewed = post.viewers.some(viewer => viewer.toString() === userId.toString());
-
-        if (!hasViewed) {
-            post.viewers.push(userId);
-
-            
-            if (post.postedBy.toString() !== userId.toString()) {
-                post.viewCount = (post.viewCount || 0) + 1; 
-            }
-
-            await post.save();
-            return res.status(200).json({ message: 'View count updated successfully', views: post.viewCount });
-        } else {
-            return res.status(200).json({ message: 'User has already viewed this video', views: post.viewCount });
+        // Check if the user has already viewed the video
+        const hasViewed = video.views.some(view => view.userId.toString() === userid.toString());
+        if (hasViewed) {
+            return res.status(200).json({ message: 'View already recorded' });
         }
+
+        // If not viewed, add the user to the views array
+        video.views.push({ userId: userid });
+        await post.save();
+
+        res.status(200).json({ message: 'View recorded successfully' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
-
 export const getViewCount = async (req, res) => {
     try {
         const { videoId } = req.params;
@@ -638,5 +672,3 @@ export const getViewCount = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
-
