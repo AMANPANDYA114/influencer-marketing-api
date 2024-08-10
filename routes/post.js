@@ -1,9 +1,10 @@
 import express from 'express';
-import { addComment, createPost, createVideoPost, deleteComment, deletePost, getComments, getFeedPosts, getPost, getUserDetails, getUserPosts, getUserPostsById, getuservideos, likePost } from '../controllers/post.js';
+import { addComment, createPost, createVideoPost, deleteComment, deletePost, getComments, getFeedPosts, getPost, getUserDetails, getUserPosts, getUserPostsById, getuservideos, likePost ,incrementViewCount,getViewCount} from '../controllers/post.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 router.get('/post/:id', authMiddleware, getPost); 
+
 
 router.put('/create-video',authMiddleware,createVideoPost)
 router.post('/create-post',authMiddleware,createPost)
@@ -18,4 +19,6 @@ router.delete('/post/:postId/comments/:commentId', authMiddleware, deleteComment
 router.get('/getuserdetails/:id', getUserDetails);
 router.get('/myposts/:id', authMiddleware, getUserPostsById);
 router.get('/myvideos/:id', authMiddleware, getuservideos);
+router.post('/video/view/:videoId/:userId', incrementViewCount);
+router.get('/video/views/:videoId', getViewCount);
 export default router;

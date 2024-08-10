@@ -581,6 +581,62 @@ export const getUserPostsById = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+export const incrementViewCount = async (req, res) => {
+    try {
+        const { videoId, userId } = req.params;
 
+        if (!videoId || !userId) {
+            return res.status(400).json({ error: 'Video ID and User ID are required' });
+        }
+
+        const post = await Post.findById(videoId);
+        if (!post) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+
+       
+        if (!Array.isArray(post.viewers)) {
+            post.viewers = [];
+        }
+
+        
+        const hasViewed = post.viewers.some(viewer => viewer.toString() === userId.toString());
+
+        if (!hasViewed) {
+            post.viewers.push(userId);
+
+            
+            if (post.postedBy.toString() !== userId.toString()) {
+                post.viewCount = (post.viewCount || 0) + 1; 
+            }
+
+            await post.save();
+            return res.status(200).json({ message: 'View count updated successfully', views: post.viewCount });
+        } else {
+            return res.status(200).json({ message: 'User has already viewed this video', views: post.viewCount });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const getViewCount = async (req, res) => {
+    try {
+        const { videoId } = req.params;
+
+        if (!videoId) {
+            return res.status(400).json({ error: 'Video ID is required' });
+        }
+
+        const post = await Post.findById(videoId).select('viewCount'); // Select only the viewCount field
+        if (!post) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+
+        return res.status(200).json({ viewCount: post.viewCount });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
 
