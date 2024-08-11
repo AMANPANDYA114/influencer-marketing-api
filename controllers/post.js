@@ -115,7 +115,7 @@ export const createVideoPost = async (req, res) => {
             }
         });
     } catch (err) {
-        // Handle unexpected errors
+      
         res.status(500).json({ error: err.message });
         console.log('Unexpected error:', err);
     }
@@ -506,9 +506,11 @@ export const getUserDetails = async (req, res) => {
 };
 
 
-export const getuservideos  = async (req, res) => {
+
+
+export const getuservideos = async (req, res) => {
     try {
-        const userId = req.params.id; 
+        const userId = req.params.id;
 
         if (!userId) {
             return res.status(400).json({ error: 'User ID is required' });
@@ -519,30 +521,36 @@ export const getuservideos  = async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
+        // Find all posts for the user and sort them by creation date
         const posts = await Post.find({ postedBy: userId }).sort({ createdAt: -1 });
 
+        // Fetch user profile details
         const userProfile = await UserProfile.findOne({ userId });
 
-        const postsWithProfilePics = posts.map(post => {
-            const { media, ...rest } = post._doc;
-            const imageMedia = media.filter(mediaItem => mediaItem.type === 'video');
+        // Map through the posts and calculate view counts for each media item
+        const postsWithDetails = await Promise.all(posts.map(async (post) => {
+            const postsWithViews = post.media.map(mediaItem => ({
+                ...mediaItem._doc,
+                viewCount: mediaItem.views.length
+            }));
+
             return {
-                ...rest,
-                veiwers:user.followers.length,
-                media: imageMedia,
+                ...post._doc,
+                media: postsWithViews.filter(mediaItem => mediaItem.type === 'video'),
                 profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
                 likeCount: post.likes.length,
-                
-                  commentsCount :post.comments.length
+                commentsCount: post.comments.length
             };
-        }).filter(post => post.media.length > 0); 
+        }));
 
-        res.status(200).json(postsWithProfilePics);
+        // Filter out posts without video media
+        const postsWithVideos = postsWithDetails.filter(post => post.media.length > 0);
+
+        res.status(200).json(postsWithVideos);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
-
 
 
 export const getUserPostsById = async (req, res) => {
@@ -611,6 +619,8 @@ export const incrementVideoView = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+
 export const getViewCount = async (req, res) => {
     try {
         const { videoId } = req.params;
