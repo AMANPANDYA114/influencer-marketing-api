@@ -63,44 +63,57 @@ export const createEvent = async (req, res) => {
   });
 };
 
+
 export const getEvents = async (req, res) => {
   try {
-    const events = await Event.find().populate({
-      path: 'creatorId',
-      select: 'fullName profilePicUrl'
-    }).select('creatorId eventType eventCategory eventSubcategory venueName venueAddress date time images description fees interests');
+    const events = await Event.find()
+      .populate({
+        path: 'creatorId' ,
+        select: 'fullName profilePicUrl' 
+      })
+      .select('creatorId eventType eventCategory eventSubcategory venueName venueAddress date time images description fees interests')
+      .exec(); 
 
-    res.status(200).json({ success: true, events });
+   
+    const eventsWithCreatorId = events.map(event => ({
+      ...event.toObject(),
+      creatorId: event.creatorId._id  
+    }));
+
+    res.status(200).json({ success: true, events: eventsWithCreatorId });
   } catch (err) {
     console.error('Error fetching events:', err);
     res.status(500).json({ success: false, message: 'Error fetching events' });
   }
 };
 
+export const deleteEvent = async (req, res) => {
+  const { eventId } = req.params;  
+
+  try {
+   
+    const event = await Event.findById(eventId);
+
+    if (!event) {
+      return res.status(404).json({ success: false, message: 'Event not found' });
+    }
+
+   
+    if (event.creatorId.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'You are not authorized to delete this event' });
+    }
+
+   
+    await Event.findByIdAndDelete(eventId);
+
+    res.status(200).json({ success: true, message: 'Event deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting event:', err);
+    res.status(500).json({ success: false, message: 'Error deleting event' });
+  }
+};
 
 
-
-
-// export const getEventsSubcategory = async (req, res) => {
-//   const { subcategory } = req.query;
-
-//   try {
-//     let query = {};
-//     if (subcategory) {
-//       query.eventSubcategory = subcategory;
-//     }
-
-//     const events = await Event.find(query).populate({
-//       path: 'creatorId',
-//       select: 'fullName profilePicUrl',
-//     }).select('creatorId eventType eventCategory eventSubcategory venueName venueAddress date time images description fees interests');
-
-//     res.status(200).json({ success: true, events });
-//   } catch (err) {
-//     console.error('Error fetching events:', err);
-//     res.status(500).json({ success: false, message: 'Error fetching events' });
-//   }
-// };
 
 
 
@@ -114,7 +127,7 @@ export const getEventsSubcategory = async (req, res) => {
       query.eventSubcategory = subcategory;
     }
 
-    const events = await Event.find(query).select('eventName images');
+    const events = await Event.find(query).select('eventName  eventSubcategory  images description date time venueName venueAddress ');
 
     res.status(200).json({ success: true, events });
   } catch (err) {

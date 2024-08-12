@@ -9,7 +9,7 @@ router.post('/video/view/:userid/:videoid', incrementVideoView);
 
 router.put('/create-video',authMiddleware,createVideoPost)
 router.post('/create-post',authMiddleware,createPost)
-// router.put('/create-post',authMiddleware,uploadMediaPost);
+
 router.delete('/post/:id', authMiddleware, deletePost);
 router.get('/feed', authMiddleware, getFeedPosts); 
 router.get('/posts/:username', authMiddleware, getUserPosts); 

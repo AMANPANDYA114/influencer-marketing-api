@@ -11,7 +11,7 @@ import { uploadProfilePic, getUserProfile, updateUserProfile, uploadBackgroundIm
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 import { getCategory, createCategory, updateCategory, deleteCategory } from '../controllers/category.js';
-import { getEvents,createEvent ,getEventsSubcategory} from '../controllers/events.js';
+import { getEvents,createEvent ,getEventsSubcategory,deleteEvent} from '../controllers/events.js';
 
 const router = express.Router();
 
@@ -40,6 +40,7 @@ router.get('/getevents', getEvents);
 router.get('/getsub-events', getEventsSubcategory);
 
 router.post('/create-events', authMiddleware, createEvent);
+router.delete('/events/:eventId',authMiddleware, deleteEvent);
 
 
 export default router;

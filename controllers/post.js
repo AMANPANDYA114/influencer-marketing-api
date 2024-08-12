@@ -521,13 +521,13 @@ export const getuservideos = async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Find all posts for the user and sort them by creation date
+        
         const posts = await Post.find({ postedBy: userId }).sort({ createdAt: -1 });
 
-        // Fetch user profile details
+       
         const userProfile = await UserProfile.findOne({ userId });
 
-        // Map through the posts and calculate view counts for each media item
+       
         const postsWithDetails = await Promise.all(posts.map(async (post) => {
             const postsWithViews = post.media.map(mediaItem => ({
                 ...mediaItem._doc,
@@ -543,7 +543,7 @@ export const getuservideos = async (req, res) => {
             };
         }));
 
-        // Filter out posts without video media
+       
         const postsWithVideos = postsWithDetails.filter(post => post.media.length > 0);
 
         res.status(200).json(postsWithVideos);
