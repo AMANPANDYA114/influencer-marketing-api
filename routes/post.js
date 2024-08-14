@@ -1,6 +1,6 @@
 
 import express from 'express';
-import { addComment, createPost, createVideoPost, deleteComment, deletePost, getComments, getFeedPosts, getPost, getUserDetails, getUserPosts, getUserPostsById, getuservideos, likePost ,getViewCount,incrementVideoView} from '../controllers/post.js';
+import { addComment, createPost, createVideoPost, deleteComment, deletePost, getComments, getFeedPosts, getPost, getUserDetails, getUserPosts, getUserPostsById, getuservideos, getViewCount, incrementVideoView, likePost } from '../controllers/post.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
