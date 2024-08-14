@@ -4,7 +4,7 @@ const adminMiddleware = async (req, res, next) => {
   try {
     const token = req.headers.authorization.split(' ')[1];
     if (!token) {
-      return res.status(401).json({ success: false, message: 'Authorization token is required' });
+      return res.status(401).json({ success: false, message: 'Authorization token is require' });
     }
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const admin = await AdminRegister.findById(decoded.userId);
