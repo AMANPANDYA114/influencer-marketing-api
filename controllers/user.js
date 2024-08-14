@@ -62,7 +62,7 @@ export const userRegister = async (req, res) => {
         age: newUser.age,
         email: newUser.email,
         account: newUser.account,
-        role: newUser.role // Including the role in the response
+        role: newUser.role 
       }
     });
   } catch (err) {
