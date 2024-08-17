@@ -9,7 +9,6 @@ import authMiddleware from '../middlewares/authMiddleware.js';
 import UserProfile from '../models/profile .js';
 
 
-
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 
@@ -71,6 +70,7 @@ export const userRegister = async (req, res) => {
   }
 };
 
+
 export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -108,6 +108,7 @@ export const adminLogin = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error logging in' });
   }
 };
+
 export const adminRegister = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -152,6 +153,7 @@ export const adminRegister = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error registering admin' });
   }
 };
+
 export const userLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -186,7 +188,7 @@ export const userLogin = async (req, res) => {
         age: user.age,
         email: user.email,
         account: user.account,
-        role: user.role // Including the role in the response
+        role: user.role 
       },
       token: token,
        expireIn: '15 days'
@@ -197,6 +199,7 @@ export const userLogin = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error logging in' });
   }
 };
+
 export const userLogout = async (req, res) => {
   try {
     const token = req.cookies.token;
@@ -214,6 +217,7 @@ export const userLogout = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error logging out' });
   }
 };
+
 export const followUser = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -269,10 +273,10 @@ export const unfollowUser = async (req, res) => {
       return res.status(400).json({ error: 'Not following this user' });
     }
 
-    // Update the user's following array
+    
     await User.findByIdAndUpdate(userId, { $pull: { following: unfollowUserId } });
 
-    // Update the unfollowed user's followers array
+    
     await User.findByIdAndUpdate(unfollowUserId, { $pull: { followers: userId } });
 
     console.log(`User ${userId} unfollowed user ${unfollowUserId}`);
