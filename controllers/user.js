@@ -34,7 +34,7 @@ export const userRegister = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const userProfile = await UserProfile.findOne({ userId: user._id });
+   
     const newUser = new User({
       fullName,
       username,
@@ -43,8 +43,7 @@ export const userRegister = async (req, res) => {
       account,
       password: hashedPassword,
       confirmPassword: hashedPassword,
-      profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
-      role: 'user' // Adding the role here
+      role: 'user' 
     });
     await newUser.save();
 
