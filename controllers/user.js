@@ -34,7 +34,7 @@ export const userRegister = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
+    const userProfile = await UserProfile.findOne({ userId: user._id });
     const newUser = new User({
       fullName,
       username,
@@ -43,6 +43,7 @@ export const userRegister = async (req, res) => {
       account,
       password: hashedPassword,
       confirmPassword: hashedPassword,
+      profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
       role: 'user' // Adding the role here
     });
     await newUser.save();
@@ -177,7 +178,7 @@ export const userLogin = async (req, res) => {
     });
 
     console.log(`User logged in: ${user.email}, ID: ${user._id}, Role: ${user.role}`);
-
+    const userProfile = await UserProfile.findOne({ userId: user._id });
     res.cookie('token', token, {httpOnly: true,maxAge: 15 * 24 * 60 * 60 * 1000  }).json({
       success: true,
       message: 'Login successful',
@@ -188,6 +189,7 @@ export const userLogin = async (req, res) => {
         age: user.age,
         email: user.email,
         account: user.account,
+        profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
         role: user.role 
       },
       token: token,

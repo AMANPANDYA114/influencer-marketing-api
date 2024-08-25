@@ -20,7 +20,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Middleware setup
+
 app.use(express.json());
 app.use(cookieParser());
 app.use('/api/user', userRoutes);
