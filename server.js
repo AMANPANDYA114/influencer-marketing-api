@@ -16,6 +16,10 @@ import userRoutes from './routes/user.js';
 
 dotenv.config();
 
+
+
+console.log("MONGO_URI:", process.env.MONGO_URI);
+console.log("JWT_SECRET:", process.env.JWT_SECRET);
 const app = express();
 const server = http.createServer(app);
 const io = new SocketIOServer(server);
@@ -31,26 +35,32 @@ app.use(express.json());
 app.use(cookieParser());
 
 
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+
 
 
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
+  
+  // Check for the authorization header
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, message: 'Unauthorized: Missing or invalid token' });
   }
 
+  // Extract the token from the header
   const token = authHeader.split(' ')[1];
+  
+  // Verify the token
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({ success: false, message: 'Invalid token' });
     }
-    req.user = user; // Attach user data to request
+    
+    // Attach user data to request
+    req.user = user; 
     next();
   });
 };
+
 
 // API Routes
 app.use('/api/user', userRoutes);
@@ -208,14 +218,14 @@ app.get('/api/messages/:user1/:user2', async (req, res) => {
   }
 });
 
-// Connect to MongoDB and start server
+
+
+
 mongoose.connect(process.env.MONGO_DB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
-    console.log("Connected to MongoDB");
+    console.log('MongoDB connected');
     server.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);
     });
   })
-  .catch((err) => {
-    console.error("Error connecting to MongoDB:", err);
-  });
+  .catch(err => console.error('MongoDB connection error:', err));
