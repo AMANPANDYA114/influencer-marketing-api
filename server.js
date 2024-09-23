@@ -1,15 +1,15 @@
 
 
+import express from 'express';
+import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import express from 'express';
-import http from 'http';
 import jwt from 'jsonwebtoken';
-import mongoose from 'mongoose';
+import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import Message from './models/Message.js';
-import UserProfile from './models/profile .js'; // Corrected path (remove extra space)
+import UserProfile from './models/profile .js';
 import User from './models/user.js';
 import postRoutes from './routes/post.js';
 import userRoutes from './routes/user.js';
@@ -23,12 +23,34 @@ const PORT = process.env.PORT || 8080;
 
 // Middleware
 app.use(cors({
-  origin: ['http://192.168.0.103:8081'], // Updated to include http://
+  origin: ['http://192.168.0.103:8081'], 
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 app.use(cookieParser());
+
+
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'Unauthorized: Missing or invalid token' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, message: 'Invalid token' });
+    }
+    req.user = user; // Attach user data to request
+    next();
+  });
+};
 
 // API Routes
 app.use('/api/user', userRoutes);
@@ -50,7 +72,7 @@ io.on('connection', async (socket) => {
     const user = await User.findById(userId);
     if (user) {
       io.emit('user_online', { userId, username: user.username });
-      console.log(`${user.username} is online`); // Corrected line
+      console.log(`${user.username} is online`);
     }
   }
 
@@ -99,7 +121,37 @@ io.on('connection', async (socket) => {
   });
 });
 
-// API Endpoints
+
+app.delete('/api/messages/:user1/:user2', authMiddleware, async (req, res) => {
+  const { user1, user2 } = req.params;
+  const userId = req.user.userId; 
+
+  try {
+    
+    if (user1 !== userId && user2 !== userId) {
+      return res.status(403).json({ success: false, message: 'Unauthorized to delete messages between these users' });
+    }
+
+    // Delete messages where sender and receiver match
+    const result = await Message.deleteMany({
+      $or: [
+        { sender: user1, receiver: user2 },
+        { sender: user2, receiver: user1 }
+      ]
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: 'No messages found to delete' });
+    }
+
+    res.json({ success: true, message: 'Messages deleted successfully', deletedCount: result.deletedCount });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Error deleting messages' });
+  }
+});
+
+// Fetch users
 app.get('/api/users', async (req, res) => {
   try {
     const users = await User.find({}).exec();
@@ -120,6 +172,7 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
+// Fetch messages between two users
 app.get('/api/messages/:user1/:user2', async (req, res) => {
   const { user1, user2 } = req.params;
   try {
@@ -129,10 +182,6 @@ app.get('/api/messages/:user1/:user2', async (req, res) => {
     }
 
     const token = authHeader.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ success: false, message: 'Unauthorized: No token provided' });
-    }
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const loggedInUser = decoded.userId;
 
@@ -140,7 +189,8 @@ app.get('/api/messages/:user1/:user2', async (req, res) => {
       $or: [
         { sender: user1, receiver: user2 },
         { sender: user2, receiver: user1 }
-      ]
+      ],
+      hidden: false // Filter out hidden messages
     })
       .sort({ createdAt: 1 })
       .populate('sender', '_id username')
@@ -163,7 +213,7 @@ mongoose.connect(process.env.MONGO_DB_URI, { useNewUrlParser: true, useUnifiedTo
   .then(() => {
     console.log("Connected to MongoDB");
     server.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`); // Corrected line
+      console.log(`Server is running on http://localhost:${PORT}`);
     });
   })
   .catch((err) => {
