@@ -62,12 +62,14 @@ app.get('/api/users', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(userId);
     const followingUsers = await User.find({ _id: { $in: user.following } }).exec();
-    
+
     const usersWithProfilePics = await Promise.all(
       followingUsers.map(async (user) => {
         const userProfile = await UserProfile.findOne({ userId: user._id }).exec();
         return {
-          ...user.toObject(),
+          _id: user._id,
+          username: user.username,
+          fullName: user.fullName,
           profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
         };
       })
@@ -79,6 +81,8 @@ app.get('/api/users', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
+
+  
 
 // WebSocket Logic
 let connectedUsers = {};
