@@ -1,5 +1,6 @@
 
 
+
 import express from 'express';
 import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
@@ -15,8 +16,6 @@ import postRoutes from './routes/post.js';
 import userRoutes from './routes/user.js';
 
 dotenv.config();
-
-
 
 console.log("MONGO_URI:", process.env.MONGO_URI);
 console.log("JWT_SECRET:", process.env.JWT_SECRET);
@@ -34,37 +33,52 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-
-
-
-
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
   
-  // Check for the authorization header
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, message: 'Unauthorized: Missing or invalid token' });
   }
 
-  // Extract the token from the header
   const token = authHeader.split(' ')[1];
   
-  // Verify the token
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({ success: false, message: 'Invalid token' });
     }
     
-    // Attach user data to request
     req.user = user; 
     next();
   });
 };
 
-
 // API Routes
 app.use('/api/user', userRoutes);
 app.use('/api/userpost', postRoutes);
+
+// Fetch users that the logged-in user is following
+app.get('/api/users', authMiddleware, async (req, res) => {
+  const userId = req.user.userId; // Get the logged-in user's ID
+  try {
+    const user = await User.findById(userId);
+    const followingUsers = await User.find({ _id: { $in: user.following } }).exec();
+    
+    const usersWithProfilePics = await Promise.all(
+      followingUsers.map(async (user) => {
+        const userProfile = await UserProfile.findOne({ userId: user._id }).exec();
+        return {
+          ...user.toObject(),
+          profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
+        };
+      })
+    );
+
+    res.json(usersWithProfilePics);
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
 
 // WebSocket Logic
 let connectedUsers = {};
@@ -93,8 +107,11 @@ io.on('connection', async (socket) => {
         return;
       }
 
-      if (!mongoose.Types.ObjectId.isValid(senderId) || !mongoose.Types.ObjectId.isValid(receiverId)) {
-        console.error('Invalid senderId or receiverId');
+      const sender = await User.findById(senderId);
+      const receiver = await User.findById(receiverId);
+      
+      if (!sender.following.includes(receiverId) || !receiver.followers.includes(senderId)) {
+        console.error('Users are not connected to each other.');
         return;
       }
 
@@ -131,18 +148,16 @@ io.on('connection', async (socket) => {
   });
 });
 
-
+// Delete messages between two users
 app.delete('/api/messages/:user1/:user2', authMiddleware, async (req, res) => {
   const { user1, user2 } = req.params;
   const userId = req.user.userId; 
 
   try {
-    
     if (user1 !== userId && user2 !== userId) {
       return res.status(403).json({ success: false, message: 'Unauthorized to delete messages between these users' });
     }
 
-    // Delete messages where sender and receiver match
     const result = await Message.deleteMany({
       $or: [
         { sender: user1, receiver: user2 },
@@ -158,27 +173,6 @@ app.delete('/api/messages/:user1/:user2', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Error deleting messages' });
-  }
-});
-
-// Fetch users
-app.get('/api/users', async (req, res) => {
-  try {
-    const users = await User.find({}).exec();
-    const usersWithProfilePics = await Promise.all(
-      users.map(async (user) => {
-        const userProfile = await UserProfile.findOne({ userId: user._id }).exec();
-        return {
-          ...user.toObject(),
-          profilePicUrl: userProfile ? userProfile.profilePicUrl : null,
-        };
-      })
-    );
-
-    res.json(usersWithProfilePics);
-  } catch (err) {
-    console.error('Error fetching users:', err);
-    res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
 
@@ -218,9 +212,7 @@ app.get('/api/messages/:user1/:user2', async (req, res) => {
   }
 });
 
-
-
-
+// MongoDB connection and server start
 mongoose.connect(process.env.MONGO_DB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log('MongoDB connected');
@@ -229,3 +221,4 @@ mongoose.connect(process.env.MONGO_DB_URI, { useNewUrlParser: true, useUnifiedTo
     });
   })
   .catch(err => console.error('MongoDB connection error:', err));
+
