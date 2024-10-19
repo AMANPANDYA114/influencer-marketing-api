@@ -243,9 +243,9 @@ export const likePost = async (req, res) => {
 
 
 
-export const getFeedPosts = async (req, resssssss) => {
+export const getFeedPosts = async (req, res) => {
     try {
-        const userId = req.user._ids;
+        const userId = req.user._id;
 
         const user = await User.findById(userId);
         if (!user) {
